@@ -42,9 +42,27 @@ const useStyles = makeStyles()((theme) => ({
     pointerEvents: 'auto',
     zIndex: 6,
   },
+  headerOpen: {
+    borderTopLeftRadius: '12px',
+    borderTopRightRadius: '12px',
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+  },
+  headerClosed: {
+    borderRadius: '12px',
+  },
   footer: {
     pointerEvents: 'auto',
     zIndex: 5,
+  },
+  footerOpen: {
+    borderBottomLeftRadius: '12px',
+    borderBottomRightRadius: '12px',
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+  },
+  footerClosed: {
+    borderRadius: '12px',
   },
   middle: {
     flex: 1,
@@ -124,7 +142,7 @@ const MainPage = () => {
         </Suspense>
       )}
       <div className={classes.sidebar}>
-        <Paper square elevation={3} className={classes.header}>
+        <Paper elevation={3} className={`${classes.header} ${devicesOpen ? classes.headerOpen : classes.headerClosed}`}>
           <MainToolbar
             filteredDevices={filteredDevices}
             devicesOpen={devicesOpen}
@@ -152,7 +170,7 @@ const MainPage = () => {
             </div>
           )}
           <Paper
-            square
+            elevation={0}
             className={classes.contentList}
             style={devicesOpen ? {} : { visibility: 'hidden' }}
           >
@@ -161,7 +179,7 @@ const MainPage = () => {
         </div>
         {desktop && (
           <div className={classes.footer}>
-            <BottomMenu />
+            <BottomMenu className={devicesOpen ? classes.footerOpen : classes.footerClosed} />
           </div>
         )}
       </div>

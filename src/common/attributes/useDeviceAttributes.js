@@ -11,6 +11,7 @@ export default (t) =>
         name: t('attributeWebReportColor'),
         type: 'string',
         dataType: 'color',
+        defaultValue: '#F56F27',
       },
       devicePassword: {
         name: t('attributeDevicePassword'),

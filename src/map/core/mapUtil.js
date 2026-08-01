@@ -41,6 +41,11 @@ const canvasTintImage = (image, color) => {
 
   const context = canvas.getContext('2d');
 
+  if (image.width === 49) {
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    return canvas;
+  }
+
   context.save();
   context.fillStyle = color;
   context.globalAlpha = 1;
@@ -61,10 +66,9 @@ export const prepareIcon = (background, icon, color) => {
   canvas.style.height = `${background.height}px`;
 
   const context = canvas.getContext('2d');
-  context.drawImage(background, 0, 0, canvas.width, canvas.height);
 
   if (icon) {
-    const iconRatio = 0.5;
+    const iconRatio = 0.8;
     const imageWidth = canvas.width * iconRatio;
     const imageHeight = canvas.height * iconRatio;
     context.drawImage(
@@ -74,6 +78,8 @@ export const prepareIcon = (background, icon, color) => {
       imageWidth,
       imageHeight,
     );
+  } else {
+    context.drawImage(background, 0, 0, canvas.width, canvas.height);
   }
 
   return context.getImageData(0, 0, canvas.width, canvas.height);

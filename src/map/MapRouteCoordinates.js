@@ -18,7 +18,7 @@ const MapRouteCoordinates = ({ name, coordinates, deviceId }) => {
         return color;
       }
     }
-    return theme.palette.geometry.main;
+    return '#F56F27';
   });
 
   const mapLineWidth = useAttributePreference('mapLineWidth', 2);

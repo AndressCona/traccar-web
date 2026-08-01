@@ -4,6 +4,18 @@ export default {
       noSsr: true,
     },
   },
+  MuiPaper: {
+    styleOverrides: {
+      rounded: {
+        borderRadius: '12px',
+      },
+      root: ({ ownerState }) => ({
+        ...(ownerState.square && {
+          borderRadius: '12px !important',
+        }),
+      }),
+    },
+  },
   MuiOutlinedInput: {
     styleOverrides: {
       root: ({ theme }) => ({

@@ -162,15 +162,17 @@ const EditAttributesAccordion = ({
   const handleAddResult = (definition) => {
     setAddDialogShown(false);
     if (definition) {
+      const defInfo = definitions[definition.key] || {};
+      const defaultValue = defInfo.defaultValue;
       switch (definition.type) {
         case 'number':
-          updateAttribute(definition.key, 0);
+          updateAttribute(definition.key, defaultValue !== undefined ? defaultValue : 0);
           break;
         case 'boolean':
-          updateAttribute(definition.key, false);
+          updateAttribute(definition.key, defaultValue !== undefined ? defaultValue : false);
           break;
         default:
-          updateAttribute(definition.key, '');
+          updateAttribute(definition.key, defaultValue !== undefined ? defaultValue : '');
           break;
       }
     }

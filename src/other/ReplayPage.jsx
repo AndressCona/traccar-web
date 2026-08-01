@@ -39,8 +39,11 @@ const useStyles = makeStyles()((theme) => ({
     margin: theme.spacing(1.5),
     width: theme.dimensions.drawerWidthDesktop,
     [theme.breakpoints.down('md')]: {
-      width: '100%',
-      margin: 0,
+      width: 'calc(100% - 32px)',
+      maxWidth: 400,
+      margin: '16px auto',
+      left: '50%',
+      transform: 'translateX(-50%)',
     },
   },
   title: {
@@ -190,7 +193,7 @@ const ReplayPage = () => {
       <MapScale />
       <MapCamera positions={positions} />
       <div className={classes.sidebar}>
-        <Paper elevation={3} square>
+        <Paper elevation={3} square style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           <Toolbar>
             <IconButton edge="start" sx={{ mr: 2 }} onClick={() => navigate(-1)}>
               <BackIcon />
@@ -209,49 +212,49 @@ const ReplayPage = () => {
               </>
             )}
           </Toolbar>
-        </Paper>
-        <Paper className={classes.content} square>
-          {loaded && !filterOpen && (
-            <>
-              <Typography variant="subtitle1" align="center">
-                {deviceName}
-              </Typography>
-              <Slider
-                className={classes.slider}
-                max={positions.length - 1}
-                step={null}
-                marks={positions.map((_, index) => ({ value: index }))}
-                value={index}
-                onChange={(_, index) => setIndex(index)}
-              />
-              <div className={classes.controls}>
-                <Typography variant="caption">{`${index + 1}/${positions.length}`}</Typography>
-                <IconButton
-                  onClick={() => setIndex((index) => index - 1)}
-                  disabled={playing || index <= 0}
-                >
-                  <FastRewindIcon />
-                </IconButton>
-                <IconButton
-                  onClick={() => setPlaying(!playing)}
-                  disabled={index >= positions.length - 1}
-                >
-                  {playing ? <PauseIcon /> : <PlayArrowIcon />}
-                </IconButton>
-                <IconButton
-                  onClick={() => setIndex((index) => index + 1)}
-                  disabled={playing || index >= positions.length - 1}
-                >
-                  <FastForwardIcon />
-                </IconButton>
-                <Typography variant="caption">
-                  {formatTime(positions[index].fixTime, 'seconds')}
+          <div className={classes.content}>
+            {loaded && !filterOpen && (
+              <>
+                <Typography variant="subtitle1" align="center">
+                  {deviceName}
                 </Typography>
-              </div>
-            </>
-          )}
-          <div style={{ display: loaded && !filterOpen ? 'none' : 'block' }}>
-            <ReportFilter onShow={onShow} deviceType="single" loading={loading} />
+                <Slider
+                  className={classes.slider}
+                  max={positions.length - 1}
+                  step={null}
+                  marks={positions.map((_, index) => ({ value: index }))}
+                  value={index}
+                  onChange={(_, index) => setIndex(index)}
+                />
+                <div className={classes.controls}>
+                  <Typography variant="caption">{`${index + 1}/${positions.length}`}</Typography>
+                  <IconButton
+                    onClick={() => setIndex((index) => index - 1)}
+                    disabled={playing || index <= 0}
+                  >
+                    <FastRewindIcon />
+                  </IconButton>
+                  <IconButton
+                    onClick={() => setPlaying(!playing)}
+                    disabled={index >= positions.length - 1}
+                  >
+                    {playing ? <PauseIcon /> : <PlayArrowIcon />}
+                  </IconButton>
+                  <IconButton
+                    onClick={() => setIndex((index) => index + 1)}
+                    disabled={playing || index >= positions.length - 1}
+                  >
+                    <FastForwardIcon />
+                  </IconButton>
+                  <Typography variant="caption">
+                    {formatTime(positions[index].fixTime, 'seconds')}
+                  </Typography>
+                </div>
+              </>
+            )}
+            <div style={{ display: loaded && !filterOpen ? 'none' : 'block' }}>
+              <ReportFilter onShow={onShow} deviceType="single" loading={loading} />
+            </div>
           </div>
         </Paper>
       </div>

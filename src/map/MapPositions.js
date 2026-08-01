@@ -134,10 +134,12 @@ const MapPositions = ({
           'icon-image': '{category}-{color}',
           'icon-size': iconScale,
           'icon-allow-overlap': true,
+          'icon-rotate': ['get', 'rotation'],
+          'icon-rotation-alignment': 'map',
           'text-field': `{${titleField || 'name'}}`,
           'text-allow-overlap': true,
-          'text-anchor': 'bottom',
-          'text-offset': [0, -2 * iconScale],
+          'text-anchor': 'top',
+          'text-offset': [0, 1.5 * iconScale],
           'text-font': findFonts(map),
           'text-size': 12,
           'symbol-sort-key': ['get', 'id'],
@@ -145,19 +147,6 @@ const MapPositions = ({
         paint: {
           'text-halo-color': 'white',
           'text-halo-width': 1,
-        },
-      });
-      map.addLayer({
-        id: `direction-${source}`,
-        type: 'symbol',
-        source,
-        filter: ['all', ['!has', 'point_count'], ['==', 'direction', true]],
-        layout: {
-          'icon-image': 'direction',
-          'icon-size': iconScale,
-          'icon-allow-overlap': true,
-          'icon-rotate': ['get', 'rotation'],
-          'icon-rotation-alignment': 'map',
         },
       });
 
@@ -201,9 +190,6 @@ const MapPositions = ({
 
         if (map.getLayer(source)) {
           map.removeLayer(source);
-        }
-        if (map.getLayer(`direction-${source}`)) {
-          map.removeLayer(`direction-${source}`);
         }
         if (map.getSource(source)) {
           map.removeSource(source);

@@ -6,6 +6,18 @@ import { useAttributePreference } from '../../common/util/preferences';
 import { toMapCoordinates } from '../core/mapUtil';
 import { useTranslation } from '../../common/components/LocalizationProvider';
 
+const getDistance = (lon1, lat1, lon2, lat2) => {
+  const R = 6371; // km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
 const MapLiveRoutes = ({ deviceIds }) => {
   const id = useId();
 
@@ -29,7 +41,7 @@ const MapLiveRoutes = ({ deviceIds }) => {
         data: {
           type: 'Feature',
           geometry: {
-            type: 'LineString',
+            type: 'MultiLineString',
             coordinates: [],
           },
         },
@@ -59,7 +71,7 @@ const MapLiveRoutes = ({ deviceIds }) => {
         }
       };
     }
-    return () => {};
+    return () => { };
   }, [type, id, t]);
 
   useEffect(() => {
@@ -71,21 +83,39 @@ const MapLiveRoutes = ({ deviceIds }) => {
 
       map.getSource(id)?.setData({
         type: 'FeatureCollection',
-        features: visibleIds.map((deviceId) => ({
-          type: 'Feature',
-          geometry: {
-            type: 'LineString',
-            coordinates: history[deviceId].map(([longitude, latitude]) =>
-              toMapCoordinates(longitude, latitude),
-            ),
-          },
-          properties: {
-            color:
-              devices[deviceId]?.attributes?.['web.reportColor'] || theme.palette.geometry.main,
-            width: mapLineWidth,
-            opacity: mapLineOpacity,
-          },
-        })),
+        features: visibleIds.map((deviceId) => {
+          const coords = history[deviceId];
+          const lines = [];
+          let currentLine = [];
+          for (let i = 0; i < coords.length; i++) {
+            if (i === 0) {
+              currentLine.push(toMapCoordinates(coords[i][0], coords[i][1]));
+            } else {
+              const prev = coords[i - 1];
+              const curr = coords[i];
+              if (getDistance(prev[0], prev[1], curr[0], curr[1]) > 1.5) {
+                if (currentLine.length > 1) lines.push(currentLine);
+                currentLine = [toMapCoordinates(curr[0], curr[1])];
+              } else {
+                currentLine.push(toMapCoordinates(curr[0], curr[1]));
+              }
+            }
+          }
+          if (currentLine.length > 1) lines.push(currentLine);
+
+          return {
+            type: 'Feature',
+            geometry: {
+              type: 'MultiLineString',
+              coordinates: lines,
+            },
+            properties: {
+              color: devices[deviceId]?.attributes?.['web.reportColor'] || '#F56F27',
+              width: mapLineWidth,
+              opacity: mapLineOpacity,
+            },
+          };
+        }),
       });
     }
   }, [
