@@ -12,6 +12,7 @@ import usePersistedState from '../common/util/usePersistedState';
 import EventsDrawer from './EventsDrawer';
 import useFilter from './useFilter';
 import MainToolbar from './MainToolbar';
+import StatusFilterBar from './StatusFilterBar';
 import { useAttributePreference } from '../common/util/preferences';
 
 const MainMap = lazy(() => import('./MainMap'));
@@ -78,7 +79,9 @@ const useStyles = makeStyles()((theme) => ({
     gridArea: '1 / 1',
     zIndex: 4,
     display: 'flex',
+    flexDirection: 'column',
     minHeight: 0,
+    borderRadius: 0,
   },
 }));
 
@@ -172,9 +175,12 @@ const MainPage = () => {
           <Paper
             elevation={0}
             className={classes.contentList}
-            style={devicesOpen ? {} : { visibility: 'hidden' }}
+            style={{ visibility: devicesOpen ? 'visible' : 'hidden' }}
           >
-            <DeviceList devices={filteredDevices} />
+            <StatusFilterBar filter={filter} setFilter={setFilter} />
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <DeviceList devices={filteredDevices} keyword={keyword} />
+            </div>
           </Paper>
         </div>
         {desktop && (

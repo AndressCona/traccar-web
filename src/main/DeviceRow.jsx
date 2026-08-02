@@ -61,9 +61,9 @@ const useStyles = makeStyles()((theme) => ({
     },
   },
   selectedCard: {
-    backgroundColor: alpha(theme.palette.primary.main, 0.08),
-    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-    border: `1px solid ${theme.palette.primary.main}`,
+    backgroundColor: `${alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.16 : 0.08)} !important`,
+    boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.3 : 0.1)} !important`,
+    border: `1px solid ${theme.palette.primary.main} !important`,
   },
   timeText: {
     fontSize: '0.75rem',

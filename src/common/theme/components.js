@@ -11,7 +11,7 @@ export default {
       },
       root: ({ ownerState }) => ({
         ...(ownerState.square && {
-          borderRadius: '12px !important',
+          borderRadius: '12px',
         }),
       }),
     },
@@ -57,5 +57,23 @@ export default {
         },
       }),
     },
+  },
+  MuiCssBaseline: {
+    styleOverrides: (theme) => `
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background-color: ${theme.palette.mode === 'dark' ? '#555' : '#ccc'};
+        border-radius: 8px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background-color: ${theme.palette.mode === 'dark' ? '#777' : '#999'};
+      }
+    `,
   },
 };

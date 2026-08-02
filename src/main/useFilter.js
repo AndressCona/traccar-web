@@ -26,7 +26,13 @@ export default (
     };
 
     const filtered = Object.values(devices)
-      .filter((device) => !filter.statuses.length || filter.statuses.includes(device.status))
+      .filter((device) => {
+        if (!filter.statuses.length) return true;
+        if (filter.statuses.includes('alarm')) {
+          return !!positions[device.id]?.attributes?.alarm;
+        }
+        return filter.statuses.includes(device.status);
+      })
       .filter(
         (device) =>
           !filter.groups.length || deviceGroups(device).some((id) => filter.groups.includes(id)),

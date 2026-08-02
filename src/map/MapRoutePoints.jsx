@@ -4,6 +4,18 @@ import getSpeedColor from '../common/util/colors';
 import { findFonts, toMapCoordinates } from './core/mapUtil';
 import MapSpeedLegend from './control/MapSpeedLegend';
 
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const toRad = (x) => (x * Math.PI) / 180;
+  const R = 6371e3; // Radio de la Tierra en metros
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
 const MapRoutePoints = ({ positions, onClick, showSpeedControl }) => {
   const id = useId();
 
@@ -66,21 +78,42 @@ const MapRoutePoints = ({ positions, onClick, showSpeedControl }) => {
   useEffect(() => {
     const maxSpeed = positions.reduce((a, p) => Math.max(a, p.speed), -Infinity);
     const minSpeed = positions.reduce((a, p) => Math.min(a, p.speed), Infinity);
+
+    let lastAdded = null;
+    const filteredFeatures = [];
+
+    positions.forEach((position, index) => {
+      let add = false;
+      if (!lastAdded) {
+        add = true;
+      } else {
+        const dist = calculateDistance(lastAdded.latitude, lastAdded.longitude, position.latitude, position.longitude);
+        if (dist > 15) { // Si se movió más de 15 metros
+          add = true;
+        }
+      }
+
+      if (add) {
+        lastAdded = position;
+        filteredFeatures.push({
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: toMapCoordinates(position.longitude, position.latitude),
+          },
+          properties: {
+            index, // Mantenemos el índice original
+            id: position.id,
+            rotation: position.course,
+            color: getSpeedColor(position.speed, minSpeed, maxSpeed),
+          },
+        });
+      }
+    });
+
     map.getSource(id)?.setData({
       type: 'FeatureCollection',
-      features: positions.map((position, index) => ({
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: toMapCoordinates(position.longitude, position.latitude),
-        },
-        properties: {
-          index,
-          id: position.id,
-          rotation: position.course,
-          color: getSpeedColor(position.speed, minSpeed, maxSpeed),
-        },
-      })),
+      features: filteredFeatures,
     });
   }, [positions, id]);
 
