@@ -2,11 +2,13 @@ import { useEffect, useRef } from 'react';
 import { useTheme } from '@mui/material';
 import { makeStyles } from 'tss-react/mui';
 import { createRoot } from 'react-dom/client';
-import NotificationsIcon from '@mui/icons-material/Notifications';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import LightModeIcon from '@mui/icons-material/LightMode';
 import { map } from '../core/MapView';
 import { addOrderedControl } from '../core/mapUtil';
+import { savePersistedState } from '../../common/util/usePersistedState';
 
-const useStyles = makeStyles()((theme) => ({
+const useStyles = makeStyles()(() => ({
   button: {
     '&&': {
       display: 'flex',
@@ -14,20 +16,18 @@ const useStyles = makeStyles()((theme) => ({
       justifyContent: 'center',
       color: '#333',
     },
-    '&&.active': {
-      color: theme.palette.error.main,
-    },
   },
 }));
 
-const MapNotification = ({ enabled, onClick }) => {
+const MapThemeToggle = () => {
   const theme = useTheme();
   const { classes } = useStyles();
+  const isDark = theme.palette.mode === 'dark';
 
-  const onClickRef = useRef(onClick);
-  onClickRef.current = onClick;
+  const isDarkRef = useRef(isDark);
+  isDarkRef.current = isDark;
 
-  const buttonRef = useRef(null);
+  const rootRef = useRef(null);
 
   useEffect(() => {
     let container;
@@ -39,27 +39,36 @@ const MapNotification = ({ enabled, onClick }) => {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = `maplibregl-ctrl-icon ${classes.button}`;
-        button.onclick = () => onClickRef.current();
+        button.onclick = () => savePersistedState('darkModeOverride', !isDarkRef.current);
         container.appendChild(button);
         root = createRoot(button);
-        root.render(<NotificationsIcon fontSize="small" />);
-        buttonRef.current = button;
+        rootRef.current = root;
+        root.render(
+          isDarkRef.current ? (
+            <DarkModeIcon fontSize="small" />
+          ) : (
+            <LightModeIcon fontSize="small" />
+          ),
+        );
         return container;
       },
       onRemove: () => {
         queueMicrotask(() => root.unmount());
         container.remove();
+        rootRef.current = null;
       },
     };
-    addOrderedControl(control, theme.direction === 'rtl' ? 'top-left' : 'top-right', 1);
+    addOrderedControl(control, theme.direction === 'rtl' ? 'top-left' : 'top-right', 5);
     return () => map.removeControl(control);
   }, [theme.direction, classes.button]);
 
   useEffect(() => {
-    buttonRef.current?.classList.toggle('active', enabled);
-  }, [enabled]);
+    rootRef.current?.render(
+      isDark ? <DarkModeIcon fontSize="small" /> : <LightModeIcon fontSize="small" />,
+    );
+  }, [isDark]);
 
   return null;
 };
 
-export default MapNotification;
+export default MapThemeToggle;

@@ -36,6 +36,9 @@ export default (
           !filter.geofences.length ||
           (positions[device.id]?.geofenceIds || []).some((id) => filter.geofences.includes(id)),
       )
+      .filter(
+        (device) => !filter.alarm || positions[device.id]?.attributes?.hasOwnProperty('alarm'),
+      )
       .filter((device) => {
         const lowerCaseKeyword = keyword.toLowerCase();
         return [device.name, device.uniqueId, device.phone, device.model, device.contact].some(

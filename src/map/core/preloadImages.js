@@ -1,9 +1,10 @@
 import { grey } from '@mui/material/colors';
 import { createTheme } from '@mui/material';
-import { loadImage, prepareIcon } from './mapUtil';
+import { loadImage, prepareIcon, prepareRawIcon } from './mapUtil';
 
 import directionSvg from '../../resources/images/direction.svg';
 import backgroundSvg from '../../resources/images/background.svg';
+import vehicleFleetPng from '../../resources/images/icon/vehicle-fleet.png';
 import animalSvg from '../../resources/images/icon/animal.svg';
 import bicycleSvg from '../../resources/images/icon/bicycle.svg';
 import boatSvg from '../../resources/images/icon/boat.svg';
@@ -76,6 +77,7 @@ export default async () => {
   const background = await loadImage(backgroundSvg);
   mapImages.background = await prepareIcon(background);
   mapImages.direction = await prepareIcon(await loadImage(directionSvg));
+  mapImages.vehicle = await prepareRawIcon(await loadImage(vehicleFleetPng));
   await Promise.all(
     Object.keys(mapIcons).map(async (category) => {
       const results = [];

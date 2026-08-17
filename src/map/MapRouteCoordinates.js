@@ -1,4 +1,3 @@
-import { useTheme } from '@mui/material/styles';
 import { useId, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { map } from './core/MapView';
@@ -8,17 +7,9 @@ import { useAttributePreference } from '../common/util/preferences';
 const MapRouteCoordinates = ({ name, coordinates, deviceId }) => {
   const id = useId();
 
-  const theme = useTheme();
-
   const reportColor = useSelector((state) => {
     const attributes = state.devices.items[deviceId]?.attributes;
-    if (attributes) {
-      const color = attributes['web.reportColor'];
-      if (color) {
-        return color;
-      }
-    }
-    return theme.palette.geometry.main;
+    return attributes?.['web.reportColor'] || '#F56F27';
   });
 
   const mapLineWidth = useAttributePreference('mapLineWidth', 2);
@@ -93,7 +84,7 @@ const MapRouteCoordinates = ({ name, coordinates, deviceId }) => {
         opacity: mapLineOpacity,
       },
     });
-  }, [theme, coordinates, reportColor, mapLineWidth, mapLineOpacity, id, name]);
+  }, [coordinates, reportColor, mapLineWidth, mapLineOpacity, id, name]);
 
   return null;
 };

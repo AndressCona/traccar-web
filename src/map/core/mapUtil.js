@@ -25,6 +25,18 @@ export const fromMapCoordinates = (longitude, latitude) =>
 const transformGeometry = (geometry, from, to) =>
   gcoord.transform(structuredClone(geometry), from, to);
 
+export const addOrderedControl = (control, position, order) => {
+  map.addControl(control, position);
+  const container = map.getContainer().querySelector(`.maplibregl-ctrl-${position}`);
+  const element = container?.lastElementChild;
+  if (element) {
+    element.dataset.order = order;
+  }
+  Array.from(container?.children || [])
+    .sort((a, b) => Number(a.dataset.order || 0) - Number(b.dataset.order || 0))
+    .forEach((el) => container.appendChild(el));
+};
+
 export const loadImage = (url) =>
   new Promise((imageLoaded) => {
     const image = new Image();
@@ -51,6 +63,19 @@ const canvasTintImage = (image, color) => {
   context.restore();
 
   return canvas;
+};
+
+export const prepareRawIcon = (image) => {
+  const canvas = document.createElement('canvas');
+  canvas.width = image.width * devicePixelRatio;
+  canvas.height = image.height * devicePixelRatio;
+  canvas.style.width = `${image.width}px`;
+  canvas.style.height = `${image.height}px`;
+
+  const context = canvas.getContext('2d');
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+  return context.getImageData(0, 0, canvas.width, canvas.height);
 };
 
 export const prepareIcon = (background, icon, color) => {

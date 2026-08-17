@@ -11,6 +11,7 @@ import usePersistedState from '../../common/util/usePersistedState';
 import { mapImages } from './preloadImages';
 import useMapStyles from './useMapStyles';
 import { useAsyncTask } from '../../reactHelper';
+import { addOrderedControl } from './mapUtil';
 
 const element = document.createElement('div');
 element.style.width = '100%';
@@ -87,7 +88,7 @@ const MapView = ({ children }) => {
     const attribution = new maplibregl.AttributionControl({ compact: true });
     const navigation = new maplibregl.NavigationControl();
     map.addControl(attribution, theme.direction === 'rtl' ? 'bottom-left' : 'bottom-right');
-    map.addControl(navigation, theme.direction === 'rtl' ? 'top-left' : 'top-right');
+    addOrderedControl(navigation, theme.direction === 'rtl' ? 'top-left' : 'top-right', 2);
     return () => {
       map.removeControl(navigation);
       map.removeControl(attribution);

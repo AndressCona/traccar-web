@@ -16,7 +16,7 @@ import { useAttributePreference } from '../common/util/preferences';
 
 const MainMap = lazy(() => import('./MainMap'));
 
-const useStyles = makeStyles()((theme) => ({
+const useStyles = makeStyles()((theme, { devicesOpen }) => ({
   root: {
     height: '100%',
   },
@@ -32,6 +32,11 @@ const useStyles = makeStyles()((theme) => ({
       width: theme.dimensions.drawerWidthDesktop,
       margin: theme.spacing(1.5),
       zIndex: 3,
+      ...(devicesOpen && {
+        borderRadius: theme.spacing(2),
+        overflow: 'hidden',
+        boxShadow: '0 20px 50px rgba(0,0,0,.35)',
+      }),
     },
     [theme.breakpoints.down('md')]: {
       height: '100%',
@@ -41,10 +46,24 @@ const useStyles = makeStyles()((theme) => ({
   header: {
     pointerEvents: 'auto',
     zIndex: 6,
+    [theme.breakpoints.up('md')]: devicesOpen
+      ? { borderRadius: 0 }
+      : {
+          borderRadius: theme.spacing(2),
+          overflow: 'hidden',
+          boxShadow: '0 14px 34px rgba(0,0,0,.3)',
+        },
   },
   footer: {
     pointerEvents: 'auto',
     zIndex: 5,
+    [theme.breakpoints.up('md')]: devicesOpen
+      ? { borderRadius: 0 }
+      : {
+          borderRadius: theme.spacing(2),
+          overflow: 'hidden',
+          boxShadow: '0 14px 34px rgba(0,0,0,.3)',
+        },
   },
   middle: {
     flex: 1,
@@ -61,11 +80,13 @@ const useStyles = makeStyles()((theme) => ({
     zIndex: 4,
     display: 'flex',
     minHeight: 0,
+    [theme.breakpoints.up('md')]: {
+      borderRadius: 0,
+    },
   },
 }));
 
 const MainPage = () => {
-  const { classes } = useStyles();
   const dispatch = useDispatch();
   const theme = useTheme();
 
@@ -87,12 +108,16 @@ const MainPage = () => {
     statuses: [],
     groups: [],
     geofences: [],
+    alarm: false,
   });
   const [filterSort, setFilterSort] = usePersistedState('filterSort', '');
   const [filterMap, setFilterMap] = usePersistedState('filterMap', false);
 
   const [devicesOpen, setDevicesOpen] = useState(desktop);
   const [eventsOpen, setEventsOpen] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState({});
+
+  const { classes } = useStyles({ devicesOpen });
 
   const onEventsClick = useCallback(() => setEventsOpen(true), [setEventsOpen]);
 
@@ -124,7 +149,7 @@ const MainPage = () => {
         </Suspense>
       )}
       <div className={classes.sidebar}>
-        <Paper square elevation={3} className={classes.header}>
+        <Paper elevation={3} className={classes.header}>
           <MainToolbar
             filteredDevices={filteredDevices}
             devicesOpen={devicesOpen}
@@ -152,11 +177,17 @@ const MainPage = () => {
             </div>
           )}
           <Paper
-            square
             className={classes.contentList}
             style={devicesOpen ? {} : { visibility: 'hidden' }}
           >
-            <DeviceList devices={filteredDevices} />
+            <DeviceList
+              devices={filteredDevices}
+              collapsedGroups={collapsedGroups}
+              setCollapsedGroups={setCollapsedGroups}
+              filter={filter}
+              setFilter={setFilter}
+              keyword={keyword}
+            />
           </Paper>
         </div>
         {desktop && (
@@ -171,7 +202,6 @@ const MainPage = () => {
           deviceId={selectedDeviceId}
           position={selectedPosition}
           onClose={() => dispatch(devicesActions.selectId(null))}
-          desktopPadding={theme.dimensions.drawerWidthDesktop}
         />
       )}
     </div>

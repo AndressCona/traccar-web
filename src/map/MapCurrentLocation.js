@@ -1,6 +1,7 @@
 import * as maplibregl from 'maplibre-gl';
 import { useEffect } from 'react';
 import { map } from './core/MapView';
+import { addOrderedControl } from './core/mapUtil';
 import { useTheme } from '@mui/material';
 
 const MapCurrentLocation = () => {
@@ -14,7 +15,7 @@ const MapCurrentLocation = () => {
       },
       trackUserLocation: false,
     });
-    map.addControl(control, theme.direction === 'rtl' ? 'top-left' : 'top-right');
+    addOrderedControl(control, theme.direction === 'rtl' ? 'top-left' : 'top-right', 4);
     return () => map.removeControl(control);
   }, [theme.direction]);
 

@@ -1,6 +1,5 @@
 import { useId, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { useTheme } from '@mui/material/styles';
 import { map } from '../core/MapView';
 import { useAttributePreference } from '../../common/util/preferences';
 import { toMapCoordinates } from '../core/mapUtil';
@@ -9,7 +8,6 @@ import { useTranslation } from '../../common/components/LocalizationProvider';
 const MapLiveRoutes = ({ deviceIds }) => {
   const id = useId();
 
-  const theme = useTheme();
   const t = useTranslation();
 
   const type = useAttributePreference('mapLiveRoutes', 'none');
@@ -80,25 +78,14 @@ const MapLiveRoutes = ({ deviceIds }) => {
             ),
           },
           properties: {
-            color:
-              devices[deviceId]?.attributes?.['web.reportColor'] || theme.palette.geometry.main,
+            color: devices[deviceId]?.attributes?.['web.reportColor'] || '#F56F27',
             width: mapLineWidth,
             opacity: mapLineOpacity,
           },
         })),
       });
     }
-  }, [
-    theme,
-    type,
-    devices,
-    selectedDeviceId,
-    history,
-    deviceIds,
-    id,
-    mapLineOpacity,
-    mapLineWidth,
-  ]);
+  }, [type, devices, selectedDeviceId, history, deviceIds, id, mapLineOpacity, mapLineWidth]);
 
   return null;
 };

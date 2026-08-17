@@ -8,8 +8,8 @@ export default defineConfig(() => ({
   server: {
     port: 3000,
     proxy: {
-      '/api/socket': 'ws://localhost:8082',
-      '/api': 'http://localhost:8082',
+      '/api/socket': { target: 'wss://gps.fleetgpstracker.com.au', changeOrigin: true, secure: true, ws: true },
+      '/api': { target: 'https://gps.fleetgpstracker.com.au', changeOrigin: true, secure: true },
     },
   },
   build: {

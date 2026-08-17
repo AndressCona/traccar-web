@@ -1,14 +1,6 @@
 import { useDispatch, useSelector } from 'react-redux';
 import { makeStyles } from 'tss-react/mui';
-import {
-  IconButton,
-  Tooltip,
-  Avatar,
-  ListItemAvatar,
-  ListItemText,
-  ListItemButton,
-  Typography,
-} from '@mui/material';
+import { IconButton, Tooltip, ListItemButton, Typography } from '@mui/material';
 import BatteryFullIcon from '@mui/icons-material/BatteryFull';
 import BatteryChargingFullIcon from '@mui/icons-material/BatteryChargingFull';
 import Battery60Icon from '@mui/icons-material/Battery60';
@@ -16,6 +8,7 @@ import BatteryCharging60Icon from '@mui/icons-material/BatteryCharging60';
 import Battery20Icon from '@mui/icons-material/Battery20';
 import BatteryCharging20Icon from '@mui/icons-material/BatteryCharging20';
 import ErrorIcon from '@mui/icons-material/Error';
+import PowerOffIcon from '@mui/icons-material/PowerOff';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { devicesActions } from '../store';
@@ -27,21 +20,52 @@ import {
   getStatusColor,
 } from '../common/util/formatter';
 import { useTranslation } from '../common/components/LocalizationProvider';
-import { mapIconKey, mapIcons } from '../map/core/preloadImages';
 import { useAdministrator } from '../common/util/permissions';
 import EngineIcon from '../resources/images/data/engine.svg?react';
-import { useAttributePreference } from '../common/util/preferences';
-import GeofencesValue from '../common/components/GeofencesValue';
-import DriverValue from '../common/components/DriverValue';
-import MotionBar from './components/MotionBar';
 
 dayjs.extend(relativeTime);
 
 const useStyles = makeStyles()((theme) => ({
-  icon: {
-    width: '25px',
-    height: '25px',
-    filter: 'brightness(0) invert(1)',
+  dot: {
+    flex: 'none',
+    width: 11,
+    height: 11,
+    borderRadius: '50%',
+    backgroundColor: 'currentColor',
+  },
+  body: {
+    flex: 1,
+    minWidth: 0,
+    marginLeft: theme.spacing(2),
+  },
+  nameRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(0.5),
+    minWidth: 0,
+  },
+  name: {
+    flex: '0 1 auto',
+    minWidth: 0,
+    fontWeight: 600,
+  },
+  noCutoffIcon: {
+    flex: 'none',
+    fontSize: '1rem',
+  },
+  model: {
+    display: 'block',
+    color: theme.palette.text.secondary,
+  },
+  rt: {
+    flex: 'none',
+    textAlign: 'right',
+    marginLeft: theme.spacing(1),
+  },
+  badges: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
   },
   batteryText: {
     fontSize: '0.75rem',
@@ -76,45 +100,14 @@ const DeviceRow = ({ devices, index, style }) => {
   const item = devices[index];
   const position = useSelector((state) => state.session.positions[item.id]);
 
-  const devicePrimary = useAttributePreference('devicePrimary', 'name');
-  const deviceSecondary = useAttributePreference('deviceSecondary', '');
+  const noCutoff = item.name.startsWith('*');
+  const displayName = noCutoff ? item.name.slice(1).trim() : item.name;
 
-  const resolveFieldValue = (field) => {
-    if (field === 'geofenceIds') {
-      const geofenceIds = position?.geofenceIds;
-      return geofenceIds?.length ? <GeofencesValue geofenceIds={geofenceIds} /> : null;
-    }
-    if (field === 'driverUniqueId') {
-      const driverUniqueId = position?.attributes?.driverUniqueId;
-      return driverUniqueId ? <DriverValue driverUniqueId={driverUniqueId} /> : null;
-    }
-    if (field === 'motion') {
-      return <MotionBar deviceId={item.id} />;
-    }
-    return item[field];
-  };
-
-  const primaryValue = resolveFieldValue(devicePrimary);
-  const secondaryValue = resolveFieldValue(deviceSecondary);
-
-  const secondaryText = () => {
-    let status;
+  const statusText = () => {
     if (item.status === 'online' || !item.lastUpdate) {
-      status = formatStatus(item.status, t);
-    } else {
-      status = dayjs(item.lastUpdate).fromNow();
+      return formatStatus(item.status, t);
     }
-    return (
-      <>
-        {secondaryValue && (
-          <>
-            {secondaryValue}
-            {' • '}
-          </>
-        )}
-        <span className={classes[getStatusColor(item.status)]}>{status}</span>
-      </>
-    );
+    return dayjs(item.lastUpdate).fromNow();
   };
 
   return (
@@ -126,33 +119,34 @@ const DeviceRow = ({ devices, index, style }) => {
         selected={selectedDeviceId === item.id}
         className={selectedDeviceId === item.id ? classes.selected : null}
       >
-        <ListItemAvatar>
-          <Avatar>
-            <img className={classes.icon} src={mapIcons[mapIconKey(item.category)]} alt="" />
-          </Avatar>
-        </ListItemAvatar>
-        <ListItemText
-          primary={primaryValue}
-          secondary={secondaryText()}
-          slots={{
-            primary: Typography,
-            secondary: Typography,
-          }}
-          slotProps={{
-            primary: { noWrap: true },
-            secondary: { noWrap: true },
-          }}
-        />
-        {position && (
-          <>
-            {position.attributes.hasOwnProperty('alarm') && (
+        <span className={`${classes.dot} ${classes[getStatusColor(item.status)]}`} />
+        <div className={classes.body}>
+          <div className={classes.nameRow}>
+            <Typography noWrap className={classes.name}>
+              {displayName}
+            </Typography>
+            {noCutoff && (
+              <Tooltip title="No cutoff available">
+                <PowerOffIcon className={`${classes.noCutoffIcon} ${classes.warning}`} />
+              </Tooltip>
+            )}
+          </div>
+          {item.model && (
+            <Typography noWrap variant="caption" className={classes.model}>
+              {item.model}
+            </Typography>
+          )}
+        </div>
+        <div className={classes.rt}>
+          <div className={classes.badges}>
+            {position && position.attributes.hasOwnProperty('alarm') && (
               <Tooltip title={`${t('eventAlarm')}: ${formatAlarm(position.attributes.alarm, t)}`}>
                 <IconButton size="small">
                   <ErrorIcon fontSize="small" className={classes.error} />
                 </IconButton>
               </Tooltip>
             )}
-            {position.attributes.hasOwnProperty('ignition') && (
+            {position && position.attributes.hasOwnProperty('ignition') && (
               <Tooltip
                 title={`${t('positionIgnition')}: ${formatBoolean(position.attributes.ignition, t)}`}
               >
@@ -165,7 +159,7 @@ const DeviceRow = ({ devices, index, style }) => {
                 </IconButton>
               </Tooltip>
             )}
-            {position.attributes.hasOwnProperty('batteryLevel') && (
+            {position && position.attributes.hasOwnProperty('batteryLevel') && (
               <Tooltip
                 title={`${t('positionBatteryLevel')}: ${formatPercentage(position.attributes.batteryLevel)}`}
               >
@@ -190,8 +184,11 @@ const DeviceRow = ({ devices, index, style }) => {
                 </IconButton>
               </Tooltip>
             )}
-          </>
-        )}
+          </div>
+          <Typography variant="caption" className={classes[getStatusColor(item.status)]}>
+            {statusText()}
+          </Typography>
+        </div>
       </ListItemButton>
     </div>
   );

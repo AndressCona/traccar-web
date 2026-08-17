@@ -15,6 +15,7 @@ const BaseCommandView = ({
   includeSaved = false,
   savedId,
   setSavedId,
+  hideNoQueue = false,
 }) => {
   const t = useTranslation();
   const limitCommands = useRestriction('limitCommands');
@@ -164,7 +165,7 @@ const BaseCommandView = ({
           label={t('commandSendSms')}
         />
       )}
-      {!item.textChannel && (
+      {!hideNoQueue && !item.textChannel && (
         <FormControlLabel
           control={
             <Checkbox

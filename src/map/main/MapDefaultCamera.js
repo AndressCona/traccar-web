@@ -34,15 +34,24 @@ const MapDefaultCamera = ({ filteredPositions }) => {
         });
         setInitialized(true);
       } else {
-        const coordinates = (filteredPositions || Object.values(positions)).map((item) =>
-          toMapCoordinates(item.longitude, item.latitude),
-        );
-        if (coordinates.length > 1) {
-          const bounds = coordinates.reduce(
-            (bounds, item) => bounds.extend(item),
-            new maplibregl.LngLatBounds(coordinates[0], coordinates[1]),
+        const coordinates = (filteredPositions || Object.values(positions))
+          .map((item) => toMapCoordinates(item.longitude, item.latitude))
+          .filter(
+            ([longitude, latitude]) => Number.isFinite(longitude) && Number.isFinite(latitude),
           );
-          const canvas = map.getCanvas();
+        const canvas = map.getCanvas();
+        const bounds =
+          coordinates.length > 1
+            ? coordinates.reduce(
+                (bounds, item) => bounds.extend(item),
+                new maplibregl.LngLatBounds(coordinates[0], coordinates[1]),
+              )
+            : null;
+        const degenerate =
+          bounds &&
+          bounds.getNorth() === bounds.getSouth() &&
+          bounds.getEast() === bounds.getWest();
+        if (bounds && !degenerate && canvas.width > 0 && canvas.height > 0) {
           map.fitBounds(bounds, {
             duration: 0,
             padding: Math.min(canvas.width, canvas.height) * 0.1,

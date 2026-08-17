@@ -5,7 +5,6 @@ import {
   Toolbar,
   IconButton,
   OutlinedInput,
-  InputAdornment,
   Popover,
   FormControl,
   InputLabel,
@@ -14,7 +13,6 @@ import {
   FormGroup,
   FormControlLabel,
   Checkbox,
-  Badge,
   ListItemButton,
   ListItemText,
   Tooltip,
@@ -24,9 +22,9 @@ import { useTheme } from '@mui/material/styles';
 import MapIcon from '@mui/icons-material/Map';
 import DnsIcon from '@mui/icons-material/Dns';
 import AddIcon from '@mui/icons-material/Add';
-import TuneIcon from '@mui/icons-material/Tune';
 import { useTranslation } from '../common/components/LocalizationProvider';
 import { useDeviceReadonly } from '../common/util/permissions';
+import { getStatusColor } from '../common/util/formatter';
 import DeviceRow from './DeviceRow';
 
 const useStyles = makeStyles()((theme) => ({
@@ -34,12 +32,35 @@ const useStyles = makeStyles()((theme) => ({
     display: 'flex',
     gap: theme.spacing(1),
   },
+  toggleButton: {
+    backgroundColor: theme.palette.action.hover,
+    borderRadius: theme.spacing(1.5),
+  },
+  search: {
+    borderRadius: theme.spacing(3),
+    backgroundColor: theme.palette.action.hover,
+    '& fieldset': {
+      border: 'none',
+    },
+  },
   filterPanel: {
     display: 'flex',
     flexDirection: 'column',
     padding: theme.spacing(2),
     gap: theme.spacing(2),
     width: theme.dimensions.drawerWidthTablet,
+  },
+  statusOption: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(1),
+  },
+  statusDot: {
+    flex: 'none',
+    width: 8,
+    height: 8,
+    borderRadius: '50%',
+    backgroundColor: 'currentColor',
   },
 }));
 
@@ -78,31 +99,21 @@ const MainToolbar = ({
 
   return (
     <Toolbar ref={toolbarRef} className={classes.toolbar}>
-      <IconButton edge="start" onClick={() => setDevicesOpen(!devicesOpen)}>
+      <IconButton
+        edge="start"
+        className={classes.toggleButton}
+        onClick={() => setDevicesOpen(!devicesOpen)}
+      >
         {devicesOpen ? <MapIcon /> : <DnsIcon />}
       </IconButton>
       <OutlinedInput
         ref={inputRef}
+        className={classes.search}
         placeholder={t('sharedSearchDevices')}
         value={keyword}
         onChange={(e) => setKeyword(e.target.value)}
         onFocus={() => setDevicesAnchorEl(toolbarRef.current)}
         onBlur={() => setDevicesAnchorEl(null)}
-        endAdornment={
-          <InputAdornment position="end">
-            <IconButton size="small" edge="end" onClick={() => setFilterAnchorEl(inputRef.current)}>
-              <Badge
-                color="info"
-                variant="dot"
-                invisible={
-                  !filter.statuses.length && !filter.groups.length && !filter.geofences.length
-                }
-              >
-                <TuneIcon fontSize="small" />
-              </Badge>
-            </IconButton>
-          </InputAdornment>
-        }
         size="small"
         fullWidth
       />
@@ -117,10 +128,13 @@ const MainToolbar = ({
         marginThreshold={0}
         slotProps={{
           paper: {
-            style: { width: `calc(${toolbarRef.current?.clientWidth}px - ${theme.spacing(4)})` },
+            style: {
+              width: `calc(${toolbarRef.current?.clientWidth}px - ${theme.spacing(4)})`,
+              borderRadius: theme.spacing(2),
+            },
           },
         }}
-        elevation={1}
+        elevation={4}
         disableAutoFocus
         disableEnforceFocus
       >
@@ -141,6 +155,12 @@ const MainToolbar = ({
           vertical: 'bottom',
           horizontal: 'left',
         }}
+        slotProps={{
+          paper: {
+            style: { borderRadius: theme.spacing(2) },
+          },
+        }}
+        elevation={4}
       >
         <div className={classes.filterPanel}>
           <FormControl>
@@ -151,9 +171,17 @@ const MainToolbar = ({
               onChange={(e) => setFilter({ ...filter, statuses: e.target.value })}
               multiple
             >
-              <MenuItem value="online">{`${t('deviceStatusOnline')} (${deviceStatusCount('online')})`}</MenuItem>
-              <MenuItem value="offline">{`${t('deviceStatusOffline')} (${deviceStatusCount('offline')})`}</MenuItem>
-              <MenuItem value="unknown">{`${t('deviceStatusUnknown')} (${deviceStatusCount('unknown')})`}</MenuItem>
+              {['online', 'offline', 'unknown'].map((status) => (
+                <MenuItem key={status} value={status}>
+                  <span className={classes.statusOption}>
+                    <span
+                      className={classes.statusDot}
+                      style={{ color: theme.palette[getStatusColor(status)].main }}
+                    />
+                    {`${t(`deviceStatus${status.charAt(0).toUpperCase()}${status.slice(1)}`)} (${deviceStatusCount(status)})`}
+                  </span>
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
           <FormControl>

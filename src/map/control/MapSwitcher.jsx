@@ -14,6 +14,7 @@ import { createRoot } from 'react-dom/client';
 import LayersIcon from '@mui/icons-material/Layers';
 import TuneIcon from '@mui/icons-material/Tune';
 import { map } from '../core/MapView';
+import { addOrderedControl } from '../core/mapUtil';
 import usePersistedState from '../../common/util/usePersistedState';
 import { useTranslation } from '../../common/components/LocalizationProvider';
 
@@ -97,7 +98,7 @@ const MapSwitcher = ({ styles, selectedId, onSelect }) => {
         element.remove();
       },
     };
-    map.addControl(control, theme.direction === 'rtl' ? 'top-left' : 'top-right');
+    addOrderedControl(control, theme.direction === 'rtl' ? 'top-left' : 'top-right', 3);
     return () => map.removeControl(control);
   }, [theme.direction, classes.button]);
 

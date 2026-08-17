@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { IconButton, Paper, Slider, Toolbar, Typography } from '@mui/material';
+import { Divider, IconButton, Paper, Slider, Toolbar, Typography } from '@mui/material';
 import { makeStyles } from 'tss-react/mui';
 import TuneIcon from '@mui/icons-material/Tune';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -38,9 +38,14 @@ const useStyles = makeStyles()((theme) => ({
     top: 0,
     margin: theme.spacing(1.5),
     width: theme.dimensions.drawerWidthDesktop,
+    borderRadius: theme.spacing(2),
+    overflow: 'hidden',
+    boxShadow: '0 20px 50px rgba(0,0,0,.35)',
     [theme.breakpoints.down('md')]: {
       width: '100%',
       margin: 0,
+      borderRadius: 0,
+      boxShadow: 'none',
     },
   },
   title: {
@@ -190,7 +195,7 @@ const ReplayPage = () => {
       <MapScale />
       <MapCamera positions={positions} />
       <div className={classes.sidebar}>
-        <Paper elevation={3} square>
+        <Paper elevation={0}>
           <Toolbar>
             <IconButton edge="start" sx={{ mr: 2 }} onClick={() => navigate(-1)}>
               <BackIcon />
@@ -210,7 +215,8 @@ const ReplayPage = () => {
             )}
           </Toolbar>
         </Paper>
-        <Paper className={classes.content} square>
+        <Divider />
+        <Paper className={classes.content} elevation={0}>
           {loaded && !filterOpen && (
             <>
               <Typography variant="subtitle1" align="center">

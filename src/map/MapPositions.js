@@ -30,38 +30,24 @@ const MapPositions = ({
   const selectedDeviceId = useSelector((state) => state.devices.selectedId);
 
   const mapCluster = useAttributePreference('mapCluster', true);
-  const directionType = useAttributePreference('mapDirection', 'selected');
 
   const disabledRef = useRef(disabled);
   disabledRef.current = disabled;
 
   const createFeature = useCallback(
-    (devices, position, selectedPositionId) => {
+    (devices, position) => {
       const device = devices[position.deviceId];
-      let showDirection;
-      switch (directionType) {
-        case 'none':
-          showDirection = false;
-          break;
-        case 'all':
-          showDirection = position.course > 0;
-          break;
-        default:
-          showDirection = selectedPositionId === position.id && position.course > 0;
-          break;
-      }
       return {
         id: position.id,
         deviceId: position.deviceId,
-        name: device.name,
+        name: device.name.startsWith('*') ? device.name.slice(1).trim() : device.name,
         fixTime: formatTime(position.fixTime, 'seconds'),
         category: mapIconKey(device.category),
         color: showStatus ? position.attributes.color || getStatusColor(device.status) : 'neutral',
         rotation: position.course,
-        direction: showDirection,
       };
     },
-    [directionType, showStatus],
+    [showStatus],
   );
 
   const onMouseEnter = () => (map.getCanvas().style.cursor = 'pointer');
@@ -131,9 +117,11 @@ const MapPositions = ({
         source,
         filter: ['!has', 'point_count'],
         layout: {
-          'icon-image': '{category}-{color}',
+          'icon-image': 'vehicle',
           'icon-size': iconScale,
           'icon-allow-overlap': true,
+          'icon-rotate': ['get', 'rotation'],
+          'icon-rotation-alignment': 'map',
           'text-field': `{${titleField || 'name'}}`,
           'text-allow-overlap': true,
           'text-anchor': 'bottom',
@@ -145,19 +133,6 @@ const MapPositions = ({
         paint: {
           'text-halo-color': 'white',
           'text-halo-width': 1,
-        },
-      });
-      map.addLayer({
-        id: `direction-${source}`,
-        type: 'symbol',
-        source,
-        filter: ['all', ['!has', 'point_count'], ['==', 'direction', true]],
-        layout: {
-          'icon-image': 'direction',
-          'icon-size': iconScale,
-          'icon-allow-overlap': true,
-          'icon-rotate': ['get', 'rotation'],
-          'icon-rotation-alignment': 'map',
         },
       });
 
@@ -202,9 +177,6 @@ const MapPositions = ({
         if (map.getLayer(source)) {
           map.removeLayer(source);
         }
-        if (map.getLayer(`direction-${source}`)) {
-          map.removeLayer(`direction-${source}`);
-        }
         if (map.getSource(source)) {
           map.removeSource(source);
         }
@@ -237,7 +209,7 @@ const MapPositions = ({
               type: 'Point',
               coordinates: toMapCoordinates(position.longitude, position.latitude),
             },
-            properties: createFeature(devices, position, selectedPosition && selectedPosition.id),
+            properties: createFeature(devices, position),
           })),
       });
     });
