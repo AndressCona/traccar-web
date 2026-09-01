@@ -22,6 +22,7 @@ import {
 import { useTranslation } from '../common/components/LocalizationProvider';
 import { useAdministrator } from '../common/util/permissions';
 import EngineIcon from '../resources/images/data/engine.svg?react';
+import NoSignalIcon from '../resources/images/data/no-signal.svg?react';
 
 dayjs.extend(relativeTime);
 
@@ -110,6 +111,9 @@ const DeviceRow = ({ devices, index, style }) => {
     return dayjs(item.lastUpdate).fromNow();
   };
 
+  const isSignalLost = (item.status === 'offline' || item.status === 'unknown') && position && position.attributes.ignition;
+  const statusColor = isSignalLost ? 'warning' : getStatusColor(item.status);
+
   return (
     <div style={style}>
       <ListItemButton
@@ -119,7 +123,7 @@ const DeviceRow = ({ devices, index, style }) => {
         selected={selectedDeviceId === item.id}
         className={selectedDeviceId === item.id ? classes.selected : null}
       >
-        <span className={`${classes.dot} ${classes[getStatusColor(item.status)]}`} />
+        <span className={`${classes.dot} ${classes[statusColor]}`} />
         <div className={classes.body}>
           <div className={classes.nameRow}>
             <Typography noWrap className={classes.name}>
@@ -159,6 +163,13 @@ const DeviceRow = ({ devices, index, style }) => {
                 </IconButton>
               </Tooltip>
             )}
+            {(item.status === 'offline' || item.status === 'unknown') && position && position.attributes.ignition && (
+              <Tooltip title="Signal Lost">
+                <IconButton size="small">
+                  <NoSignalIcon width={20} height={20} className={classes.neutral} />
+                </IconButton>
+              </Tooltip>
+            )}
             {position && position.attributes.hasOwnProperty('batteryLevel') && (
               <Tooltip
                 title={`${t('positionBatteryLevel')}: ${formatPercentage(position.attributes.batteryLevel)}`}
@@ -185,7 +196,7 @@ const DeviceRow = ({ devices, index, style }) => {
               </Tooltip>
             )}
           </div>
-          <Typography variant="caption" className={classes[getStatusColor(item.status)]}>
+          <Typography variant="caption" className={classes[statusColor]}>
             {statusText()}
           </Typography>
         </div>

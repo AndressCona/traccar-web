@@ -8,12 +8,18 @@ import {
   Button,
   TextField,
   Typography,
+  IconButton,
+  Tooltip,
+  Stack,
+  Menu,
 } from '@mui/material';
 import { useSelector } from 'react-redux';
 import dayjs from 'dayjs';
+import PrintIcon from '@mui/icons-material/Print';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 import { useTranslation } from '../../common/components/LocalizationProvider';
 import useReportStyles from '../common/useReportStyles';
-import SplitButton from '../../common/components/SplitButton';
 import SelectField from '../../common/components/SelectField';
 import { useRestriction } from '../../common/util/permissions';
 import { deviceEquality } from '../../common/util/deviceEquality';
@@ -65,6 +71,16 @@ const ReportFilter = ({ children, onShow, onExport, onSchedule, deviceType, load
 
   const [description, setDescription] = useState();
   const [calendarId, setCalendarId] = useState();
+
+  const [exportAnchorEl, setExportAnchorEl] = useState(null);
+
+  const handleExportClick = (event) => {
+    setExportAnchorEl(event.currentTarget);
+  };
+
+  const handleExportClose = () => {
+    setExportAnchorEl(null);
+  };
 
   const evaluateDisabled = () => {
     if (deviceType === 'single' && !deviceIds.length) {
@@ -292,31 +308,93 @@ const ReportFilter = ({ children, onShow, onExport, onSchedule, deviceType, load
       )}
       {children}
       <div className={classes.filterItem}>
-        {Object.keys(options).length === 1 ? (
-          <Button
-            fullWidth
-            variant="outlined"
-            color="secondary"
-            disabled={disabled}
-            onClick={onClick}
-          >
-            <Typography variant="button" noWrap>
-              {t(loading ? 'sharedLoading' : 'reportShow')}
-            </Typography>
-          </Button>
-        ) : (
-          <SplitButton
-            fullWidth
-            variant="outlined"
-            color="secondary"
-            disabled={disabled}
-            onClick={onClick}
-            selected={selectedOption}
-            setSelected={onSelected}
-            options={options}
-          />
-        )}
+        <Button
+          fullWidth
+          variant="contained"
+          color="primary"
+          disabled={disabled}
+          onClick={() => onClick(selectedOption)}
+        >
+          <Typography variant="button" noWrap>
+            {selectedOption === 'schedule' ? t('reportSchedule') : t(loading ? 'sharedLoading' : 'reportShow')}
+          </Typography>
+        </Button>
       </div>
+      {Object.keys(options).length > 1 && (
+        <Stack
+          direction="row"
+          spacing={0.5}
+          sx={{
+            position: 'absolute',
+            top: '4px',
+            right: '8px',
+          }}
+        >
+          {onExport && (
+            <>
+              <Tooltip title={t('reportExport')}>
+                <span>
+                  <IconButton
+                    disabled={!loaded || disabled}
+                    onClick={handleExportClick}
+                    color="primary"
+                    size="small"
+                  >
+                    <FileDownloadIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Menu
+                anchorEl={exportAnchorEl}
+                open={Boolean(exportAnchorEl)}
+                onClose={handleExportClose}
+              >
+                {formats.map((format) => (
+                  <MenuItem
+                    key={format}
+                    onClick={() => {
+                      onSelected(format);
+                      handleExportClose();
+                    }}
+                  >
+                    {format.toUpperCase()}
+                  </MenuItem>
+                ))}
+              </Menu>
+            </>
+          )}
+          {onExport && (
+            <Tooltip title={t('reportPrint')}>
+              <span>
+                <IconButton
+                  disabled={!loaded || disabled}
+                  onClick={() => onSelected('print')}
+                  color="primary"
+                  size="small"
+                >
+                  <PrintIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
+          {onSchedule && !readonly && (
+            <Tooltip title={t('reportSchedule')}>
+              <span>
+                <IconButton
+                  onClick={() => setSelectedOption(selectedOption === 'schedule' ? 'json' : 'schedule')}
+                  color={selectedOption === 'schedule' ? 'secondary' : 'primary'}
+                  size="small"
+                  sx={selectedOption === 'schedule' ? {
+                    backgroundColor: 'action.selected',
+                  } : {}}
+                >
+                  <EventRepeatIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
+        </Stack>
+      )}
     </div>
   );
 };

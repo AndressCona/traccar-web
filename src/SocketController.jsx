@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { Snackbar } from '@mui/material';
+import { Snackbar, Alert } from '@mui/material';
 import { devicesActions, sessionActions } from './store';
 import { useCatchCallback, useAsyncTask } from './reactHelper';
 import { snackBarDurationLongMs } from './common/util/duration';
@@ -52,11 +52,15 @@ const SocketController = () => {
 
   const handleEvents = useCallback(
     (events) => {
+      const importantTypes = ['commandResult', 'alarm', 'deviceOverspeed', 'geofenceEnter', 'geofenceExit', 'maintenance'];
+      const filteredEvents = events.filter((e) => importantTypes.includes(e.type));
+      if (filteredEvents.length === 0) return;
+
       if (!features.disableEvents) {
-        dispatch(eventsActions.add(events));
+        dispatch(eventsActions.add(filteredEvents));
       }
       if (
-        events.some(
+        filteredEvents.some(
           (e) =>
             soundEvents.includes(e.type) ||
             (e.type === 'alarm' && soundAlarms.includes(e.attributes.alarm)),
@@ -65,8 +69,9 @@ const SocketController = () => {
         playAlarm();
       }
       setNotifications(
-        events.map((event) => ({
+        filteredEvents.map((event) => ({
           id: event.id,
+          deviceId: event.deviceId,
           message: event.attributes.message,
           show: true,
         })),
@@ -149,6 +154,29 @@ const SocketController = () => {
       if (authenticated) {
         const response = await fetchOrThrow('/api/devices', { signal });
         dispatch(devicesActions.refresh(await response.json()));
+
+        try {
+          const to = new Date();
+          const from = new Date(to.getTime() - 24 * 60 * 60 * 1000);
+          const query = new URLSearchParams({
+            from: from.toISOString(),
+            to: to.toISOString(),
+          });
+          const eventsResponse = await fetch(`/api/reports/events?${query.toString()}`, {
+            headers: { Accept: 'application/json' },
+            signal,
+          });
+          if (eventsResponse.ok) {
+            const events = await eventsResponse.json();
+            const dismissed = JSON.parse(localStorage.getItem('dismissedEvents') || '[]');
+            const importantTypes = ['commandResult', 'alarm', 'deviceOverspeed', 'geofenceEnter', 'geofenceExit', 'maintenance'];
+            const filteredEvents = events.filter((e) => !dismissed.includes(e.id) && importantTypes.includes(e.type));
+            dispatch(eventsActions.add(filteredEvents));
+          }
+        } catch (e) {
+          // ignore
+        }
+
         nativePostMessage('authenticated');
         connectSocket();
         return () => {
@@ -217,10 +245,63 @@ const SocketController = () => {
         <Snackbar
           key={notification.id}
           open={notification.show}
-          message={notification.message}
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
           autoHideDuration={snackBarDurationLongMs}
           onClose={() => setNotifications((prev) => prev.filter((e) => e.id !== notification.id))}
-        />
+          sx={{
+            top: '8px !important',
+            right: '60px !important',
+          }}
+        >
+          <Alert
+            severity="info"
+            onClose={(e) => {
+              e.stopPropagation();
+              setNotifications((prev) => prev.filter((e) => e.id !== notification.id));
+            }}
+            sx={{
+              width: '100%',
+              minWidth: { xs: '280px', sm: '350px' },
+              maxWidth: '450px',
+              borderRadius: '16px',
+              boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
+              backdropFilter: 'blur(8px)',
+              backgroundColor: 'rgba(30, 30, 30, 0.85)',
+              color: '#fff',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              fontWeight: 500,
+              fontSize: '0.9rem',
+              '& .MuiAlert-icon': {
+                color: '#2196f3',
+              },
+              '& .MuiAlert-message': {
+                wordBreak: 'break-word',
+                padding: 0,
+              },
+              '& .MuiAlert-action': {
+                color: 'rgba(255, 255, 255, 0.7)',
+                '& .MuiIconButton-root': {
+                  color: 'inherit',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                  },
+                },
+              },
+            }}
+          >
+            <div
+              onClick={() => {
+                if (notification.deviceId) {
+                  dispatch(devicesActions.selectId(notification.deviceId));
+                  navigate('/');
+                }
+              }}
+              style={{ cursor: 'pointer', padding: '6px 0' }}
+            >
+              {notification.message}
+            </div>
+          </Alert>
+        </Snackbar>
       ))}
     </>
   );

@@ -1,4 +1,4 @@
-import { useCallback, useReducer, useState } from 'react';
+import { useCallback, useReducer, useState, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -8,11 +8,15 @@ import {
   TableHead,
   TableBody,
   Button,
-  TableFooter,
   FormControlLabel,
   Switch,
+  Menu,
+  MenuItem,
+  IconButton,
+  Typography,
 } from '@mui/material';
 import LinkIcon from '@mui/icons-material/Link';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { useTheme } from '@mui/material/styles';
 import { useAsyncTask, useScrollToLoad, pageSize } from '../reactHelper';
 import { useTranslation } from '../common/components/LocalizationProvider';
@@ -52,6 +56,24 @@ const DevicesPage = () => {
   const [showAll, setShowAll] = usePersistedState('showAllDevices', false);
   const [hasMore, setHasMore] = useState(true);
 
+  const [filterGroup, setFilterGroup] = useState('');
+  const [groupAnchorEl, setGroupAnchorEl] = useState(null);
+
+  const handleGroupClick = (event) => {
+    setGroupAnchorEl(event.currentTarget);
+  };
+
+  const handleGroupClose = () => {
+    setGroupAnchorEl(null);
+  };
+
+  const filteredItems = useMemo(() => {
+    return items.filter((item) => {
+      const matchGroup = !filterGroup || item.groupId === Number(filterGroup);
+      return matchGroup;
+    });
+  }, [items, filterGroup]);
+
   const loadItems = useCallback(
     async (offset, signal) => {
       const query = new URLSearchParams({ all: showAll, limit: pageSize, offset });
@@ -82,10 +104,7 @@ const DevicesPage = () => {
       [t('sharedName')]: item.name,
       [t('deviceIdentifier')]: item.uniqueId,
       [t('groupParent')]: item.groupId ? groups[item.groupId]?.name : null,
-      [t('sharedPhone')]: item.phone,
       [t('deviceModel')]: item.model,
-      [t('deviceContact')]: item.contact,
-      [t('userExpirationTime')]: formatTime(item.expirationTime, 'date'),
       [t('deviceStatus')]: formatStatus(item.status, t),
       [t('deviceLastUpdate')]: formatTime(item.lastUpdate, 'minutes'),
       [t('positionAddress')]: positions[item.id]
@@ -107,31 +126,79 @@ const DevicesPage = () => {
   return (
     <PageLayout menu={<SettingsMenu />} breadcrumbs={['settingsTitle', 'deviceTitle']}>
       <SearchHeader keyword={searchKeyword} setKeyword={setSearchKeyword} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 16px 16px 16px' }}>
+        <Button onClick={handleExport} variant="contained" color="primary">
+          {t('reportExport')}
+        </Button>
+        <Typography variant="body1" color="textSecondary" style={{ fontWeight: 'bold' }}>
+          {filterGroup ? `Total: ${filteredItems.length} / ${items.length}` : `Total: ${items.length}`}
+        </Typography>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={showAll}
+              onChange={(e) => setShowAll(e.target.checked)}
+              size="small"
+            />
+          }
+          label={t('notificationAlways')}
+          labelPlacement="start"
+          disabled={!manager}
+        />
+      </div>
       <Table className={classes.table}>
         <TableHead>
           <TableRow>
             <TableCell>{t('sharedName')}</TableCell>
             <TableCell>{t('deviceIdentifier')}</TableCell>
-            <TableCell>{t('groupParent')}</TableCell>
-            <TableCell>{t('sharedPhone')}</TableCell>
+            <TableCell>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                {t('groupParent')}
+                <IconButton size="small" onClick={handleGroupClick}>
+                  <ArrowDropDownIcon />
+                </IconButton>
+                <Menu
+                  anchorEl={groupAnchorEl}
+                  open={Boolean(groupAnchorEl)}
+                  onClose={handleGroupClose}
+                >
+                  <MenuItem
+                    onClick={() => {
+                      setFilterGroup('');
+                      handleGroupClose();
+                    }}
+                    selected={filterGroup === ''}
+                  >
+                    {t('notificationAlways')}
+                  </MenuItem>
+                  {Object.values(groups).map((group) => (
+                    <MenuItem
+                      key={group.id}
+                      onClick={() => {
+                        setFilterGroup(group.id);
+                        handleGroupClose();
+                      }}
+                      selected={filterGroup === group.id}
+                    >
+                      {group.name}
+                    </MenuItem>
+                  ))}
+                </Menu>
+              </div>
+            </TableCell>
             <TableCell>{t('deviceModel')}</TableCell>
-            <TableCell>{t('deviceContact')}</TableCell>
-            <TableCell>{t('userExpirationTime')}</TableCell>
             <TableCell>{t('positionAddress')}</TableCell>
             {manager && <TableCell>{t('settingsUsers')}</TableCell>}
             <TableCell className={classes.columnAction} />
           </TableRow>
         </TableHead>
         <TableBody>
-          {items.map((item) => (
+          {filteredItems.map((item) => (
             <TableRow key={item.id}>
               <TableCell>{item.name}</TableCell>
               <TableCell>{item.uniqueId}</TableCell>
               <TableCell>{item.groupId ? groups[item.groupId]?.name : null}</TableCell>
-              <TableCell>{item.phone}</TableCell>
               <TableCell>{item.model}</TableCell>
-              <TableCell>{item.contact}</TableCell>
-              <TableCell>{formatTime(item.expirationTime, 'date')}</TableCell>
               <TableCell>
                 {positions[item.id] && (
                   <AddressValue
@@ -161,34 +228,11 @@ const DevicesPage = () => {
           {hasMore && (
             <TableShimmer
               ref={items.length > 0 ? sentinelRef : null}
-              columns={manager ? 9 : 8}
+              columns={manager ? 6 : 5}
               endAction
             />
           )}
         </TableBody>
-        <TableFooter>
-          <TableRow>
-            <TableCell>
-              <Button onClick={handleExport} variant="text">
-                {t('reportExport')}
-              </Button>
-            </TableCell>
-            <TableCell colSpan={manager ? 9 : 8} align="right">
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={showAll}
-                    onChange={(e) => setShowAll(e.target.checked)}
-                    size="small"
-                  />
-                }
-                label={t('notificationAlways')}
-                labelPlacement="start"
-                disabled={!manager}
-              />
-            </TableCell>
-          </TableRow>
-        </TableFooter>
       </Table>
       <CollectionFab editPath="/settings/device" />
     </PageLayout>

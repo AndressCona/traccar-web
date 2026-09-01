@@ -31,10 +31,11 @@ export default makeStyles()((theme) => ({
     display: 'flex',
   },
   filter: {
+    position: 'relative',
     display: 'inline-flex',
     flexWrap: 'wrap',
     gap: theme.spacing(2),
-    padding: theme.spacing(3, 2, 2),
+    padding: theme.spacing(5, 2, 2),
     '@media print': {
       display: 'none !important',
     },

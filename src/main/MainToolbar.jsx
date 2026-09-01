@@ -74,8 +74,6 @@ const MainToolbar = ({
   setFilter,
   filterSort,
   setFilterSort,
-  filterMap,
-  setFilterMap,
 }) => {
   const { classes } = useStyles();
   const theme = useTheme();
@@ -230,14 +228,6 @@ const MainToolbar = ({
               <MenuItem value="lastUpdate">{t('deviceLastUpdate')}</MenuItem>
             </Select>
           </FormControl>
-          <FormGroup>
-            <FormControlLabel
-              control={
-                <Checkbox checked={filterMap} onChange={(e) => setFilterMap(e.target.checked)} />
-              }
-              label={t('sharedFilterMap')}
-            />
-          </FormGroup>
         </div>
       </Popover>
       <IconButton edge="end" onClick={() => navigate('/settings/device')} disabled={deviceReadonly}>

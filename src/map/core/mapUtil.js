@@ -78,6 +78,59 @@ export const prepareRawIcon = (image) => {
   return context.getImageData(0, 0, canvas.width, canvas.height);
 };
 
+export const prepareGrayscaleIcon = (image) => {
+  const canvas = document.createElement('canvas');
+  canvas.width = image.width * devicePixelRatio;
+  canvas.height = image.height * devicePixelRatio;
+  canvas.style.width = `${image.width}px`;
+  canvas.style.height = `${image.height}px`;
+
+  const context = canvas.getContext('2d');
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    const v = 0.299 * r + 0.587 * g + 0.114 * b;
+    data[i] = v;
+    data[i + 1] = v;
+    data[i + 2] = v;
+  }
+  context.putImageData(imageData, 0, 0);
+
+  return imageData;
+};
+
+export const prepareReddishGrayscaleIcon = (image) => {
+  const canvas = document.createElement('canvas');
+  canvas.width = image.width * devicePixelRatio;
+  canvas.height = image.height * devicePixelRatio;
+  canvas.style.width = `${image.width}px`;
+  canvas.style.height = `${image.height}px`;
+
+  const context = canvas.getContext('2d');
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    const v = 0.299 * r + 0.587 * g + 0.114 * b;
+    // Make it reddish grayscale: tint towards red
+    data[i] = Math.min(255, v * 1.3);     // More red
+    data[i + 1] = v * 0.7;                // Less green
+    data[i + 2] = v * 0.7;                // Less blue
+  }
+  context.putImageData(imageData, 0, 0);
+
+  return imageData;
+};
+
 export const prepareIcon = (background, icon, color) => {
   const canvas = document.createElement('canvas');
   canvas.width = background.width * devicePixelRatio;

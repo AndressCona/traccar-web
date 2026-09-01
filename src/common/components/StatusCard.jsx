@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import dayjs from 'dayjs';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { Rnd } from 'react-rnd';
 import {
@@ -19,6 +20,7 @@ import {
   DialogActions,
   Button,
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import { makeStyles } from 'tss-react/mui';
 import CloseIcon from '@mui/icons-material/Close';
 import RouteIcon from '@mui/icons-material/Route';
@@ -33,19 +35,26 @@ import BatteryFullIcon from '@mui/icons-material/BatteryFull';
 import ExploreIcon from '@mui/icons-material/Explore';
 import HeightIcon from '@mui/icons-material/Height';
 import CircleIcon from '@mui/icons-material/Circle';
+import VideocamIcon from '@mui/icons-material/Videocam';
+import ShareIcon from '@mui/icons-material/Share';
 import ErrorIcon from '@mui/icons-material/Error';
 import PowerOffIcon from '@mui/icons-material/PowerOff';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import NoSignalIcon from '../../resources/images/data/no-signal.svg?react';
 
 import { useTranslation } from './LocalizationProvider';
 import RemoveDialog from './RemoveDialog';
 import PositionValue from './PositionValue';
 import AddressValue from './AddressValue';
+import AccumulatorsDialog from './AccumulatorsDialog';
+import ShareDialog from './ShareDialog';
 import BaseCommandView from '../../settings/components/BaseCommandView';
 import { useDeviceReadonly, useRestriction } from '../util/permissions';
 import usePositionAttributes from '../attributes/usePositionAttributes';
 import { devicesActions } from '../../store';
 import { useCatch, useCatchCallback } from '../../reactHelper';
 import { useAttributePreference } from '../util/preferences';
+import AnimatedNumber from './AnimatedNumber';
 import fetchOrThrow from '../util/fetchOrThrow';
 import { formatAlarm, formatStatus, getStatusColor } from '../util/formatter';
 import {
@@ -171,6 +180,12 @@ const useStyles = makeStyles()((theme, { statusColor }) => ({
     fontSize: '1.1rem',
     color: theme.palette.warning.main,
   },
+  hasEventsIcon: {
+    flex: 'none',
+    fontSize: '1.1rem',
+    color: theme.palette.error.main,
+    cursor: 'pointer',
+  },
   commandPaper: {
     borderRadius: theme.spacing(3),
   },
@@ -211,10 +226,12 @@ const useStyles = makeStyles()((theme, { statusColor }) => ({
   metric: {
     backgroundColor: theme.palette.background.paper,
     padding: theme.spacing(1.25, 2),
+    textAlign: 'center',
   },
   metricKey: {
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 5,
     fontSize: 10,
     fontWeight: 700,
@@ -223,9 +240,15 @@ const useStyles = makeStyles()((theme, { statusColor }) => ({
     color: theme.palette.text.secondary,
   },
   metricValue: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 700,
     marginTop: 4,
+  },
+  metricUnit: {
+    fontSize: 12,
+    fontWeight: 500,
+    color: theme.palette.text.secondary,
+    marginLeft: 4,
   },
   rows: {
     padding: theme.spacing(1.5, 2),
@@ -254,20 +277,24 @@ const useStyles = makeStyles()((theme, { statusColor }) => ({
     fontSize: 12.5,
   },
   compactValue: {
-    fontSize: 13,
+    fontSize: 18,
     whiteSpace: 'nowrap',
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 4,
   },
   odometerEdit: {
     display: 'inline-flex',
-    fontSize: 13,
+    fontSize: 18,
     lineHeight: 1,
   },
   addressRow: {
     padding: theme.spacing(1.25, 2),
     borderBottom: `1px solid ${theme.palette.divider}`,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   addressValue: {
     fontWeight: 600,
@@ -307,23 +334,29 @@ const useStyles = makeStyles()((theme, { statusColor }) => ({
   },
 }));
 
-const StatusCard = ({ deviceId, position, onClose, disableActions }) => {
+const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const t = useTranslation();
 
   const readonly = useRestriction('readonly');
   const deviceReadonly = useDeviceReadonly();
+  const theme = useTheme();
 
   const shareDisabled = useSelector((state) => state.session.server.attributes.disableShare);
   const user = useSelector((state) => state.session.user);
   const device = useSelector((state) => state.devices.items[deviceId]);
 
-  const statusColor = device ? getStatusColor(device.status) : 'neutral';
+  const isSignalLost = device && (device.status === 'offline' || device.status === 'unknown') && position && position.attributes.ignition;
+  const statusColor = isSignalLost ? 'warning' : (device ? getStatusColor(device.status) : 'neutral');
   const { classes } = useStyles({ statusColor });
 
   const noCutoff = device?.name.startsWith('*');
   const displayName = noCutoff ? device.name.slice(1).trim() : device?.name;
+
+  const events = useSelector((state) => state.events.items);
+  const deviceEvents = events.filter((e) => e.deviceId === deviceId);
+  const hasEvents = deviceEvents.length > 0;
 
   const deviceImage = device?.attributes?.deviceImage;
   const hasAlarm = position?.attributes?.hasOwnProperty('alarm');
@@ -359,6 +392,112 @@ const StatusCard = ({ deviceId, position, onClose, disableActions }) => {
     };
   }, [position?.deviceId]);
 
+  const [stateDurationMs, setStateDurationMs] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    const fetchStateDuration = async () => {
+      if (!deviceId) return;
+      
+      const fetchWithFrom = async (days) => {
+        const to = new Date().toISOString();
+        const from = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+        const query = new URLSearchParams();
+        query.append('deviceId', deviceId);
+        query.append('from', from);
+        query.append('to', to);
+        query.append('type', 'deviceStopped');
+        query.append('type', 'deviceMoving');
+        
+        const response = await fetchOrThrow(`/api/reports/events?${query.toString()}`);
+        return await response.json();
+      };
+      
+      try {
+        let data;
+        try {
+          data = await fetchWithFrom(90);
+        } catch (e) {
+          data = await fetchWithFrom(31);
+        }
+        
+        if (!active) return;
+        
+        const sorted = data.sort((a, b) => new Date(b.eventTime).getTime() - new Date(a.eventTime).getTime());
+        const lastEvent = sorted[0];
+        
+        if (lastEvent) {
+          setStateDurationMs(Date.now() - new Date(lastEvent.eventTime).getTime());
+        } else {
+          setStateDurationMs(null);
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    
+    fetchStateDuration();
+    const interval = setInterval(() => {
+      setStateDurationMs((prev) => (prev != null ? prev + 1000 : null));
+    }, 1000); // tick every second
+    
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [deviceId]);
+
+  const formatStateDuration = (ms) => {
+    if (ms == null) return '';
+    const totalSeconds = Math.floor(ms / 1000);
+    const seconds = totalSeconds % 60;
+    const totalMinutes = Math.floor(totalSeconds / 60);
+    const minutes = totalMinutes % 60;
+    const totalHours = Math.floor(totalMinutes / 60);
+    const hours = totalHours % 24;
+    const totalDays = Math.floor(totalHours / 24);
+    const days = totalDays % 30; // approx
+    const totalMonths = Math.floor(totalDays / 30);
+    const months = totalMonths % 12;
+    const years = Math.floor(totalMonths / 12);
+
+    let parts = [];
+    if (years > 0) parts.push(`${years}y`);
+    if (months > 0) parts.push(`${months}M`);
+    if (days > 0) parts.push(`${days}d`);
+    if (hours > 0) parts.push(`${hours}h`);
+    if (minutes > 0) parts.push(`${minutes}m`);
+    if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
+
+    return `for ${parts.slice(0, 3).join(' ')}`;
+  };
+
+  const formatTimeAgo = (date) => {
+    if (!date) return '';
+    const ms = Date.now() - new Date(date).getTime();
+    if (ms < 0) return 'now'; // handle slight future times
+    const totalSeconds = Math.floor(ms / 1000);
+    const totalMinutes = Math.floor(totalSeconds / 60);
+    const totalHours = Math.floor(totalMinutes / 60);
+    const totalDays = Math.floor(totalHours / 24);
+    const totalMonths = Math.floor(totalDays / 30);
+    const years = Math.floor(totalMonths / 12);
+
+    const render = (val, unit) => (
+      <>
+        {val}
+        <span className={classes.metricUnit}>{unit} ago</span>
+      </>
+    );
+
+    if (years > 0) return render(years, 'y');
+    if (totalMonths > 0) return render(totalMonths, 'month');
+    if (totalDays > 0) return render(totalDays, 'days');
+    if (totalHours > 0) return render(totalHours, 'h');
+    if (totalMinutes > 0) return render(totalMinutes, 'min');
+    return render(totalSeconds, 'seg');
+  };
+
   const navigationAppLink = useAttributePreference('navigationAppLink');
   const navigationAppTitle = useAttributePreference('navigationAppTitle');
 
@@ -377,6 +516,9 @@ const StatusCard = ({ deviceId, position, onClose, disableActions }) => {
   const [commandOpen, setCommandOpen] = useState(false);
   const [commandSavedId, setCommandSavedId] = useState(0);
   const [commandItem, setCommandItem] = useState({});
+
+  const [accumulatorsOpen, setAccumulatorsOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const openCommand = () => {
     setCommandSavedId(0);
@@ -429,28 +571,36 @@ const StatusCard = ({ deviceId, position, onClose, disableActions }) => {
     : [];
   const hasAddress = itemKeys.includes('address');
   const otherKeys = itemKeys.filter((key) => key !== 'address');
-  const metricKeys = otherKeys.slice(0, 2);
-  const rowKeys = otherKeys.slice(2);
+  const topMetricKeys = otherKeys.filter((key) => ['speed', 'totalDistance'].includes(key));
+  const bottomMetricKeys = otherKeys.filter((key) => ['power', 'fixTime'].includes(key));
+  const rowKeys = otherKeys.filter((key) => !['speed', 'totalDistance', 'power', 'fixTime'].includes(key));
 
   const labelFor = (key) => LABEL_OVERRIDES[key] || positionAttributes[key]?.name || key;
 
   const renderValue = (key) => {
     if (key === 'speed') {
-      return `${Math.round(speedFromKnots(position.speed, speedUnit))} ${speedUnitString(speedUnit, t)}`;
+      const speedValue = Math.round(speedFromKnots(position.speed, speedUnit));
+      return (
+        <>
+          <AnimatedNumber value={speedValue} />
+          <span className={classes.metricUnit}>{speedUnitString(speedUnit, t)}</span>
+        </>
+      );
     }
     if (key === 'totalDistance') {
       const meters = position.hasOwnProperty('totalDistance')
         ? position.totalDistance
         : position.attributes.totalDistance;
+      const distance = Math.round(distanceFromMeters(meters, distanceUnit));
       return (
         <>
-          {Math.round(distanceFromMeters(meters, distanceUnit))}{' '}
-          {distanceUnitString(distanceUnit, t)}
+          {distance.toLocaleString('es-ES')}
+          <span className={classes.metricUnit}>{distanceUnitString(distanceUnit, t)}</span>
           {!deviceReadonly && (
             <Link
-              component={RouterLink}
+              component="button"
               underline="none"
-              to={`/settings/accumulators/${position.deviceId}`}
+              onClick={() => setAccumulatorsOpen(true)}
               className={classes.odometerEdit}
             >
               &#9881;
@@ -458,6 +608,19 @@ const StatusCard = ({ deviceId, position, onClose, disableActions }) => {
           )}
         </>
       );
+    }
+    if (key === 'power') {
+      const value = position.hasOwnProperty(key) ? position[key] : position.attributes[key];
+      return (
+        <>
+          {value != null ? value.toFixed(2) : '-'}
+          <span className={classes.metricUnit}>V</span>
+        </>
+      );
+    }
+    if (key === 'fixTime' || key === 'deviceTime' || key === 'serverTime') {
+      const value = position.hasOwnProperty(key) ? position[key] : position.attributes[key];
+      return value ? formatTimeAgo(value) : '';
     }
     return (
       <PositionValue
@@ -521,19 +684,68 @@ const StatusCard = ({ deviceId, position, onClose, disableActions }) => {
                     {displayName}
                     {device.model && <span className={classes.modelSuffix}> · {device.model}</span>}
                   </Typography>
+                  {hasEvents && (
+                    <Tooltip title={`${deviceEvents.length} Pending Notification${deviceEvents.length > 1 ? 's' : ''}`}>
+                      <IconButton
+                        size="small"
+                        sx={{ padding: 0.5, marginLeft: 0.5 }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          if (onEventsClick) onEventsClick();
+                        }}
+                      >
+                        <NotificationsActiveIcon className={classes.hasEventsIcon} />
+                      </IconButton>
+                    </Tooltip>
+                  )}
                   {noCutoff && (
                     <Tooltip title="No cutoff available">
                       <PowerOffIcon className={classes.noCutoffIcon} />
                     </Tooltip>
                   )}
                 </div>
+                {position && position.attributes && (
+                  <div style={{ marginTop: '4px', fontSize: '0.85rem', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {device.status === 'offline' || device.status === 'unknown' ? (
+                      <>
+                        <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center' }}>
+                          {position.attributes.ignition ? (
+                            <span style={{ color: theme.palette.warning.main }}>Signal Lost</span>
+                          ) : (
+                            <span style={{ color: theme.palette.error.main }}>Offline</span>
+                          )}
+                        </span>
+                        {device.lastUpdate && (
+                          <span style={{ marginLeft: '4px', color: theme.palette.text.secondary }}>
+                            {formatTimeAgo(device.lastUpdate)}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      stateDurationMs != null && (
+                        <>
+                          <span style={{ 
+                            color: position.attributes.ignition ? theme.palette.success.main : theme.palette.text.disabled,
+                            fontWeight: 600 
+                          }}>
+                            {position.attributes.ignition ? 'Driving' : 'Stopped'}
+                          </span>
+                          <span style={{ marginLeft: '4px', color: theme.palette.text.secondary }}>
+                            {formatStateDuration(stateDurationMs)}
+                          </span>
+                        </>
+                      )
+                    )}
+                  </div>
+                )}
               </div>
 
               {position && (
                 <CardContent className={classes.content}>
-                  {metricKeys.length > 0 && (
+                  {topMetricKeys.length > 0 && (
                     <div className={classes.metrics}>
-                      {metricKeys.map((key) => {
+                      {topMetricKeys.map((key) => {
                         const Icon = ROW_ICONS[key] || CircleIcon;
                         return (
                           <div key={key} className={classes.metric}>
@@ -557,17 +769,47 @@ const StatusCard = ({ deviceId, position, onClose, disableActions }) => {
                   )}
                   {hasAddress && (
                     <div className={classes.addressRow}>
-                      <div className={classes.metricKey}>
-                        <RoomIcon sx={{ fontSize: 13 }} />
-                        {t('positionAddress')}
+                      <div style={{ flexGrow: 1, minWidth: 0 }}>
+                        <div className={classes.metricKey} style={{ justifyContent: 'flex-start' }}>
+                          <RoomIcon sx={{ fontSize: 13 }} />
+                          {t('positionAddress')}
+                        </div>
+                        <div ref={addressRef} className={classes.addressValue}>
+                          <AddressValue
+                            latitude={position.latitude}
+                            longitude={position.longitude}
+                            originalAddress={position.address}
+                          />
+                        </div>
                       </div>
-                      <div ref={addressRef} className={classes.addressValue}>
-                        <AddressValue
-                          latitude={position.latitude}
-                          longitude={position.longitude}
-                          originalAddress={position.address}
-                        />
-                      </div>
+                      <Tooltip title={t('sharedExtra')}>
+                        <IconButton
+                          size="small"
+                          onClick={(e) => setAnchorEl(e.currentTarget)}
+                          disabled={!position}
+                          style={{ marginLeft: 8, flexShrink: 0 }}
+                        >
+                          <PendingIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </div>
+                  )}
+                  {bottomMetricKeys.length > 0 && (
+                    <div className={classes.metrics}>
+                      {bottomMetricKeys.map((key) => {
+                        const Icon = ROW_ICONS[key] || CircleIcon;
+                        return (
+                          <div key={key} className={classes.metric}>
+                            <div className={classes.metricKey}>
+                              <Icon sx={{ fontSize: 13 }} />
+                              {labelFor(key)}
+                            </div>
+                            <div className={classes.metricValue}>
+                              {renderValue(key)}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                   {rowKeys.length > 0 && (
@@ -597,15 +839,6 @@ const StatusCard = ({ deviceId, position, onClose, disableActions }) => {
                 </CardContent>
               )}
               <CardActions className={classes.actions} disableSpacing>
-                <Tooltip title={t('sharedExtra')}>
-                  <IconButton
-                    className={classes.actionButton}
-                    onClick={(e) => setAnchorEl(e.currentTarget)}
-                    disabled={!position}
-                  >
-                    <PendingIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
                 <Tooltip title={t('reportReplay')}>
                   <IconButton
                     className={classes.actionButton}
@@ -633,16 +866,17 @@ const StatusCard = ({ deviceId, position, onClose, disableActions }) => {
                     <EditIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
-                <Tooltip title={t('sharedRemove')}>
-                  <IconButton
-                    className={classes.actionButton}
-                    color="error"
-                    onClick={() => setRemoving(true)}
-                    disabled={disableActions || deviceReadonly}
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
+                {!shareDisabled && !user.temporary && (
+                  <Tooltip title={t('sharedShare')}>
+                    <IconButton
+                      className={classes.actionButton}
+                      onClick={() => setShareOpen(true)}
+                      disabled={disableActions}
+                    >
+                      <ShareIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
               </CardActions>
             </Card>
           </Rnd>
@@ -650,13 +884,6 @@ const StatusCard = ({ deviceId, position, onClose, disableActions }) => {
       </div>
       {position && (
         <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
-          <MenuItem
-            onClick={() => navigate(`/stream?deviceId=${deviceId}`)}
-            disabled={position.protocol !== 'jt808'}
-          >
-            {t('linkLiveVideo')}
-          </MenuItem>
-          {!readonly && <MenuItem onClick={handleGeofence}>{t('sharedCreateGeofence')}</MenuItem>}
           <MenuItem
             component="a"
             target="_blank"
@@ -687,11 +914,6 @@ const StatusCard = ({ deviceId, position, onClose, disableActions }) => {
                 .replace('{longitude}', position.longitude)}
             >
               {navigationAppTitle}
-            </MenuItem>
-          )}
-          {!shareDisabled && !user.temporary && (
-            <MenuItem onClick={() => navigate(`/settings/device/${deviceId}/share`)}>
-              <Typography color="secondary">{t('sharedShare')}</Typography>
             </MenuItem>
           )}
         </Menu>
@@ -736,6 +958,16 @@ const StatusCard = ({ deviceId, position, onClose, disableActions }) => {
           </Button>
         </DialogActions>
       </Dialog>
+      <AccumulatorsDialog
+        open={accumulatorsOpen}
+        onClose={() => setAccumulatorsOpen(false)}
+        deviceId={deviceId}
+      />
+      <ShareDialog
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        deviceId={deviceId}
+      />
     </>
   );
 };

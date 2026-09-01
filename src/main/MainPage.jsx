@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useCallback, useEffect } from 'react';
+import { lazy, Suspense, useState, useCallback, useEffect, useRef } from 'react';
 import { Paper } from '@mui/material';
 import { makeStyles } from 'tss-react/mui';
 import { useTheme } from '@mui/material/styles';
@@ -13,6 +13,10 @@ import EventsDrawer from './EventsDrawer';
 import useFilter from './useFilter';
 import MainToolbar from './MainToolbar';
 import { useAttributePreference } from '../common/util/preferences';
+import { usePrevious } from '../reactHelper';
+import { map } from '../map/core/MapView';
+import * as maplibregl from 'maplibre-gl';
+import { toMapCoordinates } from '../map/core/mapUtil';
 
 const MainMap = lazy(() => import('./MainMap'));
 
@@ -109,17 +113,27 @@ const MainPage = () => {
     groups: [],
     geofences: [],
     alarm: false,
+    driving: false,
+    stopped: false,
   });
   const [filterSort, setFilterSort] = usePersistedState('filterSort', '');
-  const [filterMap, setFilterMap] = usePersistedState('filterMap', false);
 
   const [devicesOpen, setDevicesOpen] = useState(desktop);
   const [eventsOpen, setEventsOpen] = useState(false);
+  const [eventsFilterId, setEventsFilterId] = useState(null);
   const [collapsedGroups, setCollapsedGroups] = useState({});
 
   const { classes } = useStyles({ devicesOpen });
 
-  const onEventsClick = useCallback(() => setEventsOpen(true), [setEventsOpen]);
+  const onEventsClick = useCallback(() => {
+    setEventsFilterId(null);
+    setEventsOpen(true);
+  }, [setEventsOpen]);
+
+  const onDeviceEventsClick = useCallback(() => {
+    setEventsFilterId(selectedDeviceId);
+    setEventsOpen(true);
+  }, [selectedDeviceId, setEventsOpen]);
 
   useEffect(() => {
     if (!desktop && mapOnSelect && selectedDeviceId) {
@@ -131,11 +145,54 @@ const MainPage = () => {
     keyword,
     filter,
     filterSort,
-    filterMap,
+    true, // Always filter the map
     positions,
     setFilteredDevices,
     setFilteredPositions,
   );
+
+  const previousFilter = usePrevious(filter);
+  const fitBoundsRef = useRef(false);
+
+  useEffect(() => {
+    if (previousFilter && JSON.stringify(previousFilter) !== JSON.stringify(filter)) {
+      fitBoundsRef.current = true;
+    }
+  }, [filter, previousFilter]);
+
+  useEffect(() => {
+    if (fitBoundsRef.current) {
+      if (filteredPositions.length > 0) {
+        const coordinates = filteredPositions
+          .map((item) => toMapCoordinates(item.longitude, item.latitude))
+          .filter(([longitude, latitude]) => Number.isFinite(longitude) && Number.isFinite(latitude));
+        
+        if (map && map.getCanvas) {
+          const canvas = map.getCanvas();
+          if (coordinates.length > 1) {
+            const bounds = coordinates.reduce(
+              (bounds, item) => bounds.extend(item),
+              new maplibregl.LngLatBounds(coordinates[0], coordinates[1])
+            );
+            const degenerate = bounds.getNorth() === bounds.getSouth() && bounds.getEast() === bounds.getWest();
+            if (!degenerate && canvas && canvas.width > 0 && canvas.height > 0) {
+              map.fitBounds(bounds, {
+                duration: 500,
+                padding: Math.min(canvas.width, canvas.height) * 0.1,
+              });
+            }
+          } else if (coordinates.length === 1) {
+            map.flyTo({
+              center: coordinates[0],
+              zoom: Math.max(map.getZoom(), 10),
+              duration: 500,
+            });
+          }
+        }
+      }
+      fitBoundsRef.current = false;
+    }
+  }, [filteredPositions]);
 
   return (
     <div className={classes.root}>
@@ -160,8 +217,6 @@ const MainPage = () => {
             setFilter={setFilter}
             filterSort={filterSort}
             setFilterSort={setFilterSort}
-            filterMap={filterMap}
-            setFilterMap={setFilterMap}
           />
         </Paper>
         <div className={classes.middle}>
@@ -196,12 +251,13 @@ const MainPage = () => {
           </div>
         )}
       </div>
-      <EventsDrawer open={eventsOpen} onClose={() => setEventsOpen(false)} />
+      <EventsDrawer open={eventsOpen} onClose={() => setEventsOpen(false)} filter={filter} setFilter={setFilter} filterDeviceId={eventsFilterId} />
       {selectedDeviceId && (
         <StatusCard
           deviceId={selectedDeviceId}
           position={selectedPosition}
           onClose={() => dispatch(devicesActions.selectId(null))}
+          onEventsClick={onDeviceEventsClick}
         />
       )}
     </div>

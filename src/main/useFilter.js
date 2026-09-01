@@ -39,6 +39,16 @@ export default (
       .filter(
         (device) => !filter.alarm || positions[device.id]?.attributes?.hasOwnProperty('alarm'),
       )
+      .filter(
+        (device) =>
+          !filter.driving ||
+          (device.status === 'online' && positions[device.id]?.attributes?.ignition === true),
+      )
+      .filter(
+        (device) =>
+          !filter.stopped ||
+          (device.status === 'online' && positions[device.id]?.attributes?.ignition === false),
+      )
       .filter((device) => {
         const lowerCaseKeyword = keyword.toLowerCase();
         return [device.name, device.uniqueId, device.phone, device.model, device.contact].some(

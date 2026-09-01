@@ -180,27 +180,38 @@ const DeviceList = ({
   const alarmCount = Object.values(allDevices).filter((d) =>
     positions[d.id]?.attributes?.hasOwnProperty('alarm'),
   ).length;
+  const drivingCount = Object.values(allDevices).filter((d) =>
+    d.status === 'online' && positions[d.id]?.attributes?.ignition === true
+  ).length;
+  const stoppedCount = Object.values(allDevices).filter((d) =>
+    d.status === 'online' && positions[d.id]?.attributes?.ignition === false
+  ).length;
 
   const activeTab = (() => {
     if (filter.alarm) return 'alarm';
-    if (filter.statuses.length === 1 && filter.statuses[0] === 'online') return 'online';
+    if (filter.driving) return 'driving';
+    if (filter.stopped) return 'stopped';
     if (filter.statuses.length === 1 && filter.statuses[0] === 'offline') return 'offline';
     return 'all';
   })();
 
   const selectTab = (tab) => {
+    dispatch(devicesActions.selectId(null));
     switch (tab) {
-      case 'online':
-        setFilter({ ...filter, statuses: ['online'], alarm: false });
+      case 'driving':
+        setFilter({ ...filter, statuses: [], alarm: false, driving: true, stopped: false });
+        break;
+      case 'stopped':
+        setFilter({ ...filter, statuses: [], alarm: false, driving: false, stopped: true });
         break;
       case 'offline':
-        setFilter({ ...filter, statuses: ['offline'], alarm: false });
+        setFilter({ ...filter, statuses: ['offline'], alarm: false, driving: false, stopped: false });
         break;
       case 'alarm':
-        setFilter({ ...filter, statuses: [], alarm: true });
+        setFilter({ ...filter, statuses: [], alarm: true, driving: false, stopped: false });
         break;
       default:
-        setFilter({ ...filter, statuses: [], alarm: false });
+        setFilter({ ...filter, statuses: [], alarm: false, driving: false, stopped: false });
         break;
     }
   };
@@ -302,7 +313,8 @@ const DeviceList = ({
       <div className={classes.tabs}>
         {[
           ['all', 'All', Object.keys(allDevices).length],
-          ['online', t('deviceStatusOnline'), deviceStatusCount('online')],
+          ['driving', 'Driving', drivingCount],
+          ['stopped', 'Stopped', stoppedCount],
           ['offline', t('deviceStatusOffline'), deviceStatusCount('offline')],
           ['alarm', t('eventAlarm'), alarmCount],
         ].map(([key, label, count]) => (
@@ -315,10 +327,13 @@ const DeviceList = ({
             <span
               className={classes.tabCount}
               style={{
-                color:
-                  key === 'all'
-                    ? undefined
-                    : theme.palette[key === 'alarm' ? 'error' : getStatusColor(key)].main,
+                color: (() => {
+                  if (key === 'all') return undefined;
+                  if (key === 'alarm') return theme.palette.error.main;
+                  if (key === 'driving') return theme.palette.success.main;
+                  if (key === 'stopped') return theme.palette.neutral.main;
+                  return theme.palette[getStatusColor(key)]?.main;
+                })(),
               }}
             >
               {count}

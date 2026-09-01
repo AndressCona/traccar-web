@@ -34,12 +34,10 @@ const LinkField = ({
 
   useAsyncTask(
     async ({ signal }) => {
-      if (active) {
-        const response = await fetchOrThrow(endpointLinked, { signal });
-        setLinked(await response.json());
-      }
+      const response = await fetchOrThrow(endpointLinked, { signal });
+      setLinked(await response.json());
     },
-    [active, endpointLinked],
+    [endpointLinked],
   );
 
   const onChange = useCatchCallback(
@@ -85,7 +83,7 @@ const LinkField = ({
         size="small"
         loading={active && !items}
         isOptionEqualToValue={(i1, i2) => i1.id === i2.id}
-        options={items || []}
+        options={items || linked || []}
         getOptionLabel={(item) => titleGetter(item)}
         slotProps={{ chip: { size: 'small' } }}
         renderInput={(params) => (
@@ -98,12 +96,12 @@ const LinkField = ({
               ...params.slotProps,
               inputLabel: {
                 ...params.slotProps?.inputLabel,
-                shrink: !active || params.slotProps?.inputLabel?.shrink,
+                shrink: !active || params.slotProps?.inputLabel?.shrink || Boolean(linked?.length),
               },
             }}
           />
         )}
-        value={(items && linked) || []}
+        value={linked || []}
         onChange={(_, value) => onChange(value)}
         multiple
       />

@@ -32,7 +32,7 @@ const { reducer, actions } = createSlice({
     },
     updatePositions(state, action) {
       const liveRoutes =
-        state.user.attributes.mapLiveRoutes || state.server.attributes.mapLiveRoutes || 'none';
+        state.user.attributes.mapLiveRoutes || state.server.attributes.mapLiveRoutes || 'selected';
       const liveRoutesLimit =
         state.user.attributes['web.liveRouteLength'] ||
         state.server.attributes['web.liveRouteLength'] ||

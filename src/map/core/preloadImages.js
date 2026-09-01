@@ -1,6 +1,6 @@
 import { grey } from '@mui/material/colors';
 import { createTheme } from '@mui/material';
-import { loadImage, prepareIcon, prepareRawIcon } from './mapUtil';
+import { loadImage, prepareIcon, prepareRawIcon, prepareGrayscaleIcon, prepareReddishGrayscaleIcon } from './mapUtil';
 
 import directionSvg from '../../resources/images/direction.svg';
 import backgroundSvg from '../../resources/images/background.svg';
@@ -77,7 +77,10 @@ export default async () => {
   const background = await loadImage(backgroundSvg);
   mapImages.background = await prepareIcon(background);
   mapImages.direction = await prepareIcon(await loadImage(directionSvg));
-  mapImages.vehicle = await prepareRawIcon(await loadImage(vehicleFleetPng));
+  const vehicleImage = await loadImage(vehicleFleetPng);
+  mapImages.vehicle = await prepareRawIcon(vehicleImage);
+  mapImages['vehicle-off'] = prepareGrayscaleIcon(vehicleImage);
+  mapImages['vehicle-alarm'] = prepareReddishGrayscaleIcon(vehicleImage);
   await Promise.all(
     Object.keys(mapIcons).map(async (category) => {
       const results = [];

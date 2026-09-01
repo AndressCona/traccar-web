@@ -33,6 +33,9 @@ const MapPositions = ({
 
   const disabledRef = useRef(disabled);
   disabledRef.current = disabled;
+  const animationRef = useRef();
+  const previousSelectedPositionRef = useRef();
+  const targetPositionRef = useRef();
 
   const createFeature = useCallback(
     (devices, position) => {
@@ -45,6 +48,9 @@ const MapPositions = ({
         category: mapIconKey(device.category),
         color: showStatus ? position.attributes.color || getStatusColor(device.status) : 'neutral',
         rotation: position.course,
+        icon: (position.attributes.hasOwnProperty('alarm') || device.status === 'alarm')
+          ? 'vehicle-alarm' 
+          : (device.status === 'offline' || device.status === 'unknown' || (position.attributes.hasOwnProperty('ignition') && position.attributes.ignition === false) ? 'vehicle-off' : 'vehicle'),
       };
     },
     [showStatus],
@@ -117,7 +123,7 @@ const MapPositions = ({
         source,
         filter: ['!has', 'point_count'],
         layout: {
-          'icon-image': 'vehicle',
+          'icon-image': ['get', 'icon'],
           'icon-size': iconScale,
           'icon-allow-overlap': true,
           'icon-rotate': ['get', 'rotation'],
@@ -194,38 +200,167 @@ const MapPositions = ({
     titleField,
   ]);
 
+  // Unselected devices
   useEffect(() => {
-    [id, selected].forEach((source) => {
-      map.getSource(source)?.setData({
-        type: 'FeatureCollection',
-        features: positions
-          .filter((it) => devices.hasOwnProperty(it.deviceId))
-          .filter((it) =>
-            source === id ? it.deviceId !== selectedDeviceId : it.deviceId === selectedDeviceId,
-          )
-          .map((position) => ({
-            type: 'Feature',
-            geometry: {
-              type: 'Point',
-              coordinates: toMapCoordinates(position.longitude, position.latitude),
-            },
-            properties: createFeature(devices, position),
-          })),
-      });
+    map.getSource(id)?.setData({
+      type: 'FeatureCollection',
+      features: positions
+        .filter((it) => devices.hasOwnProperty(it.deviceId))
+        .filter((it) => it.deviceId !== selectedDeviceId)
+        .map((position) => ({
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: toMapCoordinates(position.longitude, position.latitude),
+          },
+          properties: createFeature(devices, position),
+        })),
     });
-  }, [
-    mapCluster,
-    clusters,
-    onMarkerClick,
-    onClusterClick,
-    devices,
-    positions,
-    selectedPosition,
-    createFeature,
-    id,
-    selected,
-    selectedDeviceId,
-  ]);
+  }, [devices, positions, createFeature, id, selectedDeviceId]);
+
+  // Selected device
+  useEffect(() => {
+    const selectedPosition = positions.find((it) => it.deviceId === selectedDeviceId);
+    const source = map.getSource(selected);
+    
+    if (!source || !selectedPosition || !devices.hasOwnProperty(selectedPosition.deviceId)) {
+      if (source) {
+        source.setData({ type: 'FeatureCollection', features: [] });
+      }
+      previousSelectedPositionRef.current = null;
+      return;
+    }
+
+    const currentCoords = toMapCoordinates(selectedPosition.longitude, selectedPosition.latitude);
+    const targetCourse = selectedPosition.course || 0;
+    const currentFeatureProps = createFeature(devices, selectedPosition);
+
+    const prevPos = previousSelectedPositionRef.current;
+    const lastTarget = targetPositionRef.current;
+
+    // If target hasn't changed, just update properties and let any ongoing animation continue
+    if (lastTarget && 
+        lastTarget.deviceId === selectedDeviceId &&
+        lastTarget.coords[0] === currentCoords[0] &&
+        lastTarget.coords[1] === currentCoords[1] &&
+        lastTarget.course === targetCourse) {
+      lastTarget.properties = currentFeatureProps;
+      // If not animating, we should update the source immediately with new properties
+      if (!animationRef.current) {
+        source.setData({
+          type: 'FeatureCollection',
+          features: [
+            {
+              type: 'Feature',
+              geometry: { type: 'Point', coordinates: currentCoords },
+              properties: { ...currentFeatureProps, rotation: targetCourse },
+            },
+          ],
+        });
+      }
+      return;
+    }
+
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+
+    targetPositionRef.current = {
+      deviceId: selectedDeviceId,
+      coords: currentCoords,
+      course: targetCourse,
+      properties: currentFeatureProps,
+    };
+
+    if (!prevPos || prevPos.deviceId !== selectedDeviceId) {
+      source.setData({
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: currentCoords },
+            properties: { ...currentFeatureProps, rotation: targetCourse },
+          },
+        ],
+      });
+      previousSelectedPositionRef.current = {
+        deviceId: selectedDeviceId,
+        coords: currentCoords,
+        course: targetCourse,
+      };
+      return;
+    }
+
+    const prevCoords = prevPos.coords;
+    const prevCourse = prevPos.course;
+
+    if (prevCoords[0] === currentCoords[0] && prevCoords[1] === currentCoords[1] && prevCourse === targetCourse) {
+      source.setData({
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: currentCoords },
+            properties: { ...currentFeatureProps, rotation: targetCourse },
+          },
+        ],
+      });
+      return;
+    }
+
+    let startTime;
+    const duration = 2000;
+
+    const interpolateAngle = (start, end, t) => {
+      let diff = ((end - start + 180) % 360) - 180;
+      diff = diff < -180 ? diff + 360 : diff;
+      return start + diff * t;
+    };
+
+    const animate = (timestamp) => {
+      if (!startTime) startTime = timestamp;
+      const progress = timestamp - startTime;
+      const t = Math.min(progress / duration, 1);
+      
+      const ease = t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+      
+      const currentTargetProps = targetPositionRef.current;
+
+      const interpolatedCoords = [
+        prevCoords[0] + (currentTargetProps.coords[0] - prevCoords[0]) * ease,
+        prevCoords[1] + (currentTargetProps.coords[1] - prevCoords[1]) * ease,
+      ];
+      
+      const interpolatedCourse = interpolateAngle(prevCourse, currentTargetProps.course, ease);
+
+      source.setData({
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: interpolatedCoords },
+            properties: { ...currentTargetProps.properties, rotation: interpolatedCourse },
+          },
+        ],
+      });
+
+      previousSelectedPositionRef.current = {
+        deviceId: selectedDeviceId,
+        coords: interpolatedCoords,
+        course: interpolatedCourse,
+      };
+
+      if (progress < duration) {
+        animationRef.current = requestAnimationFrame(animate);
+      } else {
+        animationRef.current = null;
+      }
+    };
+
+    animationRef.current = requestAnimationFrame(animate);
+
+  }, [devices, positions, createFeature, selected, selectedDeviceId]);
 
   return null;
 };
