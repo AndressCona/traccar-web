@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useTheme } from '@mui/material/styles';
-import { IconButton, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
+import { IconButton, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import {
@@ -46,6 +46,7 @@ const columnsArray = [
 const columnsMap = new Map(columnsArray);
 
 const StopReportPage = () => {
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { classes } = useReportStyles();
   const t = useTranslation();
@@ -189,7 +190,7 @@ const StopReportPage = () => {
             </TableHead>
             <TableBody>
               {!loading ? (
-                items.map((item) => (
+                items.length > 0 ? (items.map((item) => (
                   <TableRow key={item.positionId}>
                     <TableCell className={classes.columnAction} padding="none">
                       {selectedItem === item ? (
@@ -207,7 +208,7 @@ const StopReportPage = () => {
                       <TableCell key={key}>{formatValue(item, key)}</TableCell>
                     ))}
                   </TableRow>
-                ))
+                ))) : searchParams.has('from') ? (<TableRow><TableCell colSpan={100} align="center"><Typography variant="body1" color="textSecondary" sx={{ py: 4 }}>{t('sharedNoData')}</Typography></TableCell></TableRow>) : null
               ) : (
                 <TableShimmer columns={columns.length + 2} startAction />
               )}

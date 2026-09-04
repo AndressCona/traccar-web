@@ -36,6 +36,9 @@ export default makeStyles()((theme) => ({
     flexWrap: 'wrap',
     gap: theme.spacing(2),
     padding: theme.spacing(5, 2, 2),
+    [theme.breakpoints.down('md')]: {
+      display: 'flex',
+    },
     '@media print': {
       display: 'none !important',
     },

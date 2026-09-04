@@ -69,12 +69,31 @@ const SocketController = () => {
         playAlarm();
       }
       setNotifications(
-        filteredEvents.map((event) => ({
-          id: event.id,
-          deviceId: event.deviceId,
-          message: event.attributes.message,
-          show: true,
-        })),
+        filteredEvents.map((event) => {
+          let message = event.attributes.message;
+          if (event.type === 'commandResult' && message) {
+            if (message.includes('S20')) {
+              const lastCmd = localStorage.getItem(`lastCommand_${event.deviceId}`);
+              if (lastCmd === 'engineStop') {
+                message = message.replace('S20', 'Engine Cut Successful (S20)');
+              } else if (lastCmd === 'engineResume') {
+                message = message.replace('S20', 'Engine Resume Successful (S20)');
+              } else {
+                message = message.replace('S20', 'Engine Cut / Resume Successful (S20)');
+              }
+            } else if (message.includes('S21')) {
+              message = message.replace('S21', 'Engine Resume Successful (S21)');
+            } else if (message.includes('SET OK')) {
+              message = message.replace('SET OK', 'Command executed successfully (SET OK)');
+            }
+          }
+          return {
+            id: event.id,
+            deviceId: event.deviceId,
+            message: message,
+            show: true,
+          };
+        }),
       );
     },
     [features, dispatch, soundEvents, soundAlarms],

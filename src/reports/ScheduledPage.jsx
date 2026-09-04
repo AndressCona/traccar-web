@@ -1,6 +1,7 @@
+import { useSearchParams } from 'react-router-dom';
 import { useReducer, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { Table, TableRow, TableCell, TableHead, TableBody, IconButton } from '@mui/material';
+import { Table, TableRow, TableCell, TableHead, TableBody, IconButton, Typography } from '@mui/material';
 import { makeStyles } from 'tss-react/mui';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useAsyncTask } from '../reactHelper';
@@ -19,6 +20,7 @@ const useStyles = makeStyles()((theme) => ({
 }));
 
 const ScheduledPage = () => {
+  const [searchParams] = useSearchParams();
   const { classes } = useStyles();
   const t = useTranslation();
 
@@ -73,7 +75,7 @@ const ScheduledPage = () => {
         </TableHead>
         <TableBody>
           {!loading ? (
-            items.map((item) => (
+            items.length > 0 ? (items.map((item) => (
               <TableRow key={item.id}>
                 <TableCell>{formatType(item.type)}</TableCell>
                 <TableCell>{item.description}</TableCell>
@@ -84,7 +86,7 @@ const ScheduledPage = () => {
                   </IconButton>
                 </TableCell>
               </TableRow>
-            ))
+            ))) : searchParams.has('from') ? (<TableRow><TableCell colSpan={100} align="center"><Typography variant="body1" color="textSecondary" sx={{ py: 4 }}>{t('sharedNoData')}</Typography></TableCell></TableRow>) : null
           ) : (
             <TableShimmer columns={4} endAction />
           )}

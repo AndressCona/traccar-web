@@ -278,35 +278,62 @@ const EventsDrawer = ({ open, onClose, filter, setFilter, filterDeviceId }) => {
                   // ignore
                 }
               }
+              let friendlyMessage = null;
+              if (text.includes('S20')) {
+                const lastCmd = localStorage.getItem(`lastCommand_${selectedEvent?.deviceId}`);
+                if (lastCmd === 'engineStop') {
+                  friendlyMessage = 'Engine Cut Successful';
+                } else if (lastCmd === 'engineResume') {
+                  friendlyMessage = 'Engine Resume Successful';
+                } else {
+                  friendlyMessage = 'Engine Cut / Resume Successful';
+                }
+              } else if (text.includes('S21')) friendlyMessage = 'Engine Resume Successful';
+              else if (text.includes('SET OK')) friendlyMessage = 'Command executed successfully';
+
               if (text.includes(',')) {
                 const parts = text.split(',');
                 return (
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(2, 1fr)',
-                      gap: '8px 16px',
-                      color: 'inherit',
-                    }}
-                  >
-                    {parts.map((part, index) => {
-                      if (!part.trim()) return null;
-                      return (
-                        <div key={index} style={{ display: 'flex', alignItems: 'center' }}>
-                          <span style={{ marginRight: '6px', color: '#2196f3', fontSize: '1.2rem', lineHeight: 1 }}>•</span>
-                          <Typography variant="body2" style={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
-                            {part.trim()}
-                          </Typography>
-                        </div>
-                      );
-                    })}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {friendlyMessage && (
+                      <Typography variant="body1" style={{ color: '#4caf50', fontWeight: 'bold', marginBottom: '8px', textAlign: 'center' }}>
+                        {friendlyMessage}
+                      </Typography>
+                    )}
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(2, 1fr)',
+                        gap: '8px 16px',
+                        color: 'inherit',
+                      }}
+                    >
+                      {parts.map((part, index) => {
+                        if (!part.trim()) return null;
+                        return (
+                          <div key={index} style={{ display: 'flex', alignItems: 'center' }}>
+                            <span style={{ marginRight: '6px', color: '#2196f3', fontSize: '1.2rem', lineHeight: 1 }}>•</span>
+                            <Typography variant="body2" style={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                              {part.trim()}
+                            </Typography>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 );
               }
               return (
-                <Typography variant="body2" style={{ fontFamily: 'monospace' }}>
-                  {text}
-                </Typography>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {friendlyMessage && (
+                    <Typography variant="body1" style={{ color: '#4caf50', fontWeight: 'bold', textAlign: 'center' }}>
+                      {friendlyMessage}
+                    </Typography>
+                  )}
+                  <Typography variant="body2" style={{ fontFamily: 'monospace' }}>
+                    {text}
+                  </Typography>
+                </div>
               );
             })()}
           </Box>

@@ -1,6 +1,7 @@
 import dayjs from 'dayjs';
 import { useState } from 'react';
-import { FormControl, InputLabel, Select, MenuItem, useTheme } from '@mui/material';
+import { useSearchParams } from 'react-router-dom';
+import { FormControl, InputLabel, Select, MenuItem, Typography, useTheme } from '@mui/material';
 import {
   Brush,
   CartesianGrid,
@@ -33,6 +34,8 @@ const ChartReportPage = () => {
   const { classes } = useReportStyles();
   const theme = useTheme();
   const t = useTranslation();
+
+  const [searchParams] = useSearchParams();
 
   const positionAttributes = usePositionAttributes(t);
 
@@ -165,7 +168,7 @@ const ChartReportPage = () => {
           </FormControl>
         </div>
       </ReportFilter>
-      {items.length > 0 && (
+      {items.length > 0 ? (
         <div className={classes.chart}>
           <ResponsiveContainer>
             <LineChart
@@ -220,7 +223,11 @@ const ChartReportPage = () => {
             </LineChart>
           </ResponsiveContainer>
         </div>
-      )}
+      ) : searchParams.has('from') ? (
+        <Typography variant="body1" align="center" color="textSecondary" sx={{ py: 4 }}>
+          {t('sharedNoData')}
+        </Typography>
+      ) : null}
     </PageLayout>
   );
 };

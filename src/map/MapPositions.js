@@ -46,11 +46,11 @@ const MapPositions = ({
         name: device.name.startsWith('*') ? device.name.slice(1).trim() : device.name,
         fixTime: formatTime(position.fixTime, 'seconds'),
         category: mapIconKey(device.category),
-        color: showStatus ? position.attributes.color || getStatusColor(device.status) : 'neutral',
+        color: showStatus ? position.attributes?.color || getStatusColor(device.status) : 'neutral',
         rotation: position.course,
-        icon: (position.attributes.hasOwnProperty('alarm') || device.status === 'alarm')
+        icon: (position.attributes?.hasOwnProperty('alarm') || device.status === 'alarm')
           ? 'vehicle-alarm' 
-          : (device.status === 'offline' || device.status === 'unknown' || (position.attributes.hasOwnProperty('ignition') && position.attributes.ignition === false) ? 'vehicle-off' : 'vehicle'),
+          : (device.status === 'offline' || device.status === 'unknown' || (position.attributes?.hasOwnProperty('ignition') && position.attributes.ignition === false) ? 'vehicle-off' : 'vehicle'),
       };
     },
     [showStatus],

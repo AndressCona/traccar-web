@@ -13,6 +13,7 @@ export default (
 ) => {
   const groups = useSelector((state) => state.groups.items);
   const devices = useSelector((state) => state.devices.items);
+  const selectedDeviceId = useSelector((state) => state.devices.selectedId);
 
   useEffect(() => {
     const deviceGroups = (device) => {
@@ -25,36 +26,24 @@ export default (
       return groupIds;
     };
 
-    const filtered = Object.values(devices)
-      .filter((device) => !filter.statuses.length || filter.statuses.includes(device.status))
-      .filter(
-        (device) =>
-          !filter.groups.length || deviceGroups(device).some((id) => filter.groups.includes(id)),
-      )
-      .filter(
-        (device) =>
-          !filter.geofences.length ||
-          (positions[device.id]?.geofenceIds || []).some((id) => filter.geofences.includes(id)),
-      )
-      .filter(
-        (device) => !filter.alarm || positions[device.id]?.attributes?.hasOwnProperty('alarm'),
-      )
-      .filter(
-        (device) =>
-          !filter.driving ||
-          (device.status === 'online' && positions[device.id]?.attributes?.ignition === true),
-      )
-      .filter(
-        (device) =>
-          !filter.stopped ||
-          (device.status === 'online' && positions[device.id]?.attributes?.ignition === false),
-      )
-      .filter((device) => {
-        const lowerCaseKeyword = keyword.toLowerCase();
-        return [device.name, device.uniqueId, device.phone, device.model, device.contact].some(
-          (s) => s && s.toLowerCase().includes(lowerCaseKeyword),
-        );
-      });
+    const lowerCaseKeyword = keyword.toLowerCase();
+
+    const filtered = Object.values(devices).filter((device) => {
+      if (device.id === selectedDeviceId) {
+        return true;
+      }
+
+      const matchStatus = !filter.statuses.length || filter.statuses.includes(device.status);
+      const matchGroup = !filter.groups.length || deviceGroups(device).some((id) => filter.groups.includes(id));
+      const matchGeofence = !filter.geofences.length || (positions[device.id]?.geofenceIds || []).some((id) => filter.geofences.includes(id));
+      const matchAlarm = !filter.alarm || positions[device.id]?.attributes?.hasOwnProperty('alarm');
+      const matchDriving = !filter.driving || (device.status === 'online' && positions[device.id]?.attributes?.ignition === true);
+      const matchStopped = !filter.stopped || (device.status === 'online' && positions[device.id]?.attributes?.ignition === false);
+      const matchKeyword = !keyword || [device.name, device.uniqueId, device.phone, device.model, device.contact].some((s) => s && s.toLowerCase().includes(lowerCaseKeyword));
+
+      return matchStatus && matchGroup && matchGeofence && matchAlarm && matchDriving && matchStopped && matchKeyword;
+    });
+
     switch (filterSort) {
       case 'name':
         filtered.sort((device1, device2) => device1.name.localeCompare(device2.name));
@@ -85,5 +74,6 @@ export default (
     positions,
     setFilteredDevices,
     setFilteredPositions,
+    selectedDeviceId,
   ]);
 };

@@ -1,5 +1,6 @@
+import { useSearchParams } from 'react-router-dom';
 import { useState } from 'react';
-import { Table, TableRow, TableCell, TableHead, TableBody } from '@mui/material';
+import { Table, TableRow, TableCell, TableHead, TableBody, Typography } from '@mui/material';
 import { formatTime } from '../common/util/formatter';
 import { useTranslation } from '../common/components/LocalizationProvider';
 import PageLayout from '../common/components/PageLayout';
@@ -23,6 +24,7 @@ const columnsArray = [
 const columnsMap = new Map(columnsArray);
 
 const AuditPage = () => {
+  const [searchParams] = useSearchParams();
   const { classes } = useReportStyles();
   const t = useTranslation();
 
@@ -63,7 +65,7 @@ const AuditPage = () => {
         </TableHead>
         <TableBody>
           {!loading ? (
-            items.map((item) => (
+            items.length > 0 ? (items.map((item) => (
               <TableRow key={item.id}>
                 {columns.map((key) => (
                   <TableCell key={key}>
@@ -71,7 +73,7 @@ const AuditPage = () => {
                   </TableCell>
                 ))}
               </TableRow>
-            ))
+            ))) : searchParams.has('from') ? (<TableRow><TableCell colSpan={100} align="center"><Typography variant="body1" color="textSecondary" sx={{ py: 4 }}>{t('sharedNoData')}</Typography></TableCell></TableRow>) : null
           ) : (
             <TableShimmer columns={columns.length} />
           )}

@@ -1,6 +1,6 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { IconButton, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
+import { IconButton, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import ReportFilter, { updateReportParams } from './components/ReportFilter';
@@ -184,44 +184,54 @@ const PositionsReportPage = () => {
             </TableHead>
             <TableBody>
               {!loading ? (
-                items.slice(0, 4000).map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className={classes.columnAction} padding="none">
-                      {selectedItem === item ? (
-                        <IconButton
-                          size="small"
-                          onClick={() => setSelectedItem(null)}
-                          ref={selectedRef}
-                        >
-                          <GpsFixedIcon fontSize="small" />
-                        </IconButton>
-                      ) : (
-                        <IconButton size="small" onClick={() => setSelectedItem(item)}>
-                          <LocationSearchingIcon fontSize="small" />
-                        </IconButton>
-                      )}
-                    </TableCell>
-                    {columns.map((key) => (
-                      <TableCell key={key}>
-                        <PositionValue
-                          position={item}
-                          property={item.hasOwnProperty(key) ? key : null}
-                          attribute={item.hasOwnProperty(key) ? null : key}
+                items.length > 0 ? (
+                  items.slice(0, 4000).map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className={classes.columnAction} padding="none">
+                        {selectedItem === item ? (
+                          <IconButton
+                            size="small"
+                            onClick={() => setSelectedItem(null)}
+                            ref={selectedRef}
+                          >
+                            <GpsFixedIcon fontSize="small" />
+                          </IconButton>
+                        ) : (
+                          <IconButton size="small" onClick={() => setSelectedItem(item)}>
+                            <LocationSearchingIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                      </TableCell>
+                      {columns.map((key) => (
+                        <TableCell key={key}>
+                          <PositionValue
+                            position={item}
+                            property={item.hasOwnProperty(key) ? key : null}
+                            attribute={item.hasOwnProperty(key) ? null : key}
+                          />
+                        </TableCell>
+                      ))}
+                      <TableCell className={classes.actionCellPadding}>
+                        <CollectionActions
+                          itemId={item.id}
+                          endpoint="positions"
+                          readonly={readonly}
+                          onReload={() => {
+                            setItems(items.filter((position) => position.id !== item.id));
+                          }}
                         />
                       </TableCell>
-                    ))}
-                    <TableCell className={classes.actionCellPadding}>
-                      <CollectionActions
-                        itemId={item.id}
-                        endpoint="positions"
-                        readonly={readonly}
-                        onReload={() => {
-                          setItems(items.filter((position) => position.id !== item.id));
-                        }}
-                      />
+                    </TableRow>
+                  ))
+                ) : searchParams.has('from') ? (
+                  <TableRow>
+                    <TableCell colSpan={100} align="center">
+                      <Typography variant="body1" color="textSecondary" sx={{ py: 4 }}>
+                        {t('sharedNoData')}
+                      </Typography>
                     </TableCell>
                   </TableRow>
-                ))
+                ) : null
               ) : (
                 <TableShimmer columns={columns.length + 1} startAction />
               )}

@@ -50,6 +50,9 @@ const DevicesPage = () => {
 
   const positions = useSelector((state) => state.session.positions);
 
+  const devices = useSelector((state) => state.devices.items);
+  const devicesArray = useMemo(() => Object.values(devices), [devices]);
+
   const [reloadKey, reload] = useReducer((k) => k + 1, 0);
   const [items, setItems] = useState([]);
   const [searchKeyword, setSearchKeyword] = useState('');
@@ -73,6 +76,18 @@ const DevicesPage = () => {
       return matchGroup;
     });
   }, [items, filterGroup]);
+
+  const getTotals = () => {
+    if (searchKeyword || showAll) {
+      const totalStr = hasMore ? `${items.length}+` : items.length;
+      return filterGroup ? `Total: ${filteredItems.length} / ${totalStr}` : `Total: ${totalStr}`;
+    }
+    
+    const total = devicesArray.length;
+    const groupTotal = filterGroup ? devicesArray.filter(d => d.groupId === Number(filterGroup)).length : total;
+    
+    return filterGroup ? `Total: ${groupTotal} / ${total}` : `Total: ${total}`;
+  };
 
   const loadItems = useCallback(
     async (offset, signal) => {
@@ -131,7 +146,7 @@ const DevicesPage = () => {
           {t('reportExport')}
         </Button>
         <Typography variant="body1" color="textSecondary" style={{ fontWeight: 'bold' }}>
-          {filterGroup ? `Total: ${filteredItems.length} / ${items.length}` : `Total: ${items.length}`}
+          {getTotals()}
         </Typography>
         <FormControlLabel
           control={

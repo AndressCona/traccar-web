@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Table, TableHead, TableRow, TableCell, TableBody, Link, IconButton } from '@mui/material';
+import { Table, TableHead, TableRow, TableCell, TableBody, Link, IconButton, Typography } from '@mui/material';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import { useSelector } from 'react-redux';
@@ -307,7 +307,7 @@ const EventReportPage = () => {
             </TableHead>
             <TableBody>
               {!loading ? (
-                items.map((item) => (
+                items.length > 0 ? (items.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className={classes.columnAction} padding="none">
                       {(item.positionId &&
@@ -327,7 +327,7 @@ const EventReportPage = () => {
                       <TableCell key={key}>{formatValue(item, key)}</TableCell>
                     ))}
                   </TableRow>
-                ))
+                ))) : searchParams.has('from') ? (<TableRow><TableCell colSpan={100} align="center"><Typography variant="body1" color="textSecondary" sx={{ py: 4 }}>{t('sharedNoData')}</Typography></TableCell></TableRow>) : null
               ) : (
                 <TableShimmer columns={columns.length + 2} />
               )}

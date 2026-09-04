@@ -22,6 +22,7 @@ import {
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { makeStyles } from 'tss-react/mui';
+import CircularProgress from '@mui/material/CircularProgress';
 import CloseIcon from '@mui/icons-material/Close';
 import RouteIcon from '@mui/icons-material/Route';
 import SendIcon from '@mui/icons-material/Send';
@@ -32,6 +33,7 @@ import SpeedIcon from '@mui/icons-material/Speed';
 import RoomIcon from '@mui/icons-material/Room';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import BatteryFullIcon from '@mui/icons-material/BatteryFull';
+import BatteryAlertIcon from '@mui/icons-material/BatteryAlert';
 import ExploreIcon from '@mui/icons-material/Explore';
 import HeightIcon from '@mui/icons-material/Height';
 import CircleIcon from '@mui/icons-material/Circle';
@@ -40,6 +42,8 @@ import ShareIcon from '@mui/icons-material/Share';
 import ErrorIcon from '@mui/icons-material/Error';
 import PowerOffIcon from '@mui/icons-material/PowerOff';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import SatelliteAltIcon from '@mui/icons-material/SatelliteAlt';
+import SignalCellularAltIcon from '@mui/icons-material/SignalCellularAlt';
 import NoSignalIcon from '../../resources/images/data/no-signal.svg?react';
 
 import { useTranslation } from './LocalizationProvider';
@@ -151,7 +155,9 @@ const useStyles = makeStyles()((theme, { statusColor }) => ({
   },
   pillDot: {
     fontSize: '8px !important',
-    color: theme.palette[statusColor]?.main || theme.palette.neutral.main,
+    color: theme.palette.mode === 'light' 
+      ? theme.palette[statusColor]?.light || theme.palette.neutral.light
+      : theme.palette[statusColor]?.main || theme.palette.neutral.main,
   },
   head: {
     padding: theme.spacing(1, 2),
@@ -540,6 +546,9 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(command),
     });
+    if (command.type) {
+      localStorage.setItem(`lastCommand_${deviceId}`, command.type);
+    }
     setCommandOpen(false);
   });
 
@@ -566,7 +575,7 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
 
   const itemKeys = position
     ? CARD_FIELDS.filter(
-        (key) => position.hasOwnProperty(key) || position.attributes.hasOwnProperty(key),
+        (key) => key === 'power' || position.hasOwnProperty(key) || position.attributes.hasOwnProperty(key),
       )
     : [];
   const hasAddress = itemKeys.includes('address');
@@ -611,9 +620,19 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
     }
     if (key === 'power') {
       const value = position.hasOwnProperty(key) ? position[key] : position.attributes[key];
+      if (value == null) {
+        return (
+          <>
+            <span style={{ color: '#f44336' }}>--</span>
+            <span className={classes.metricUnit}>V</span>
+          </>
+        );
+      }
       return (
         <>
-          {value != null ? value.toFixed(2) : '-'}
+          <span style={{ color: value < 12 ? '#f44336' : 'inherit' }}>
+            {value.toFixed(2)}
+          </span>
           <span className={classes.metricUnit}>V</span>
         </>
       );
@@ -706,36 +725,59 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
                   )}
                 </div>
                 {position && position.attributes && (
-                  <div style={{ marginTop: '4px', fontSize: '0.85rem', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {device.status === 'offline' || device.status === 'unknown' ? (
-                      <>
-                        <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center' }}>
-                          {position.attributes.ignition ? (
-                            <span style={{ color: theme.palette.warning.main }}>Signal Lost</span>
-                          ) : (
-                            <span style={{ color: theme.palette.error.main }}>Offline</span>
-                          )}
-                        </span>
-                        {device.lastUpdate && (
-                          <span style={{ marginLeft: '4px', color: theme.palette.text.secondary }}>
-                            {formatTimeAgo(device.lastUpdate)}
-                          </span>
-                        )}
-                      </>
-                    ) : (
-                      stateDurationMs != null && (
+                  <div style={{ marginTop: '4px', fontSize: '0.85rem', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      {device.status === 'offline' || device.status === 'unknown' ? (
                         <>
-                          <span style={{ 
-                            color: position.attributes.ignition ? theme.palette.success.main : theme.palette.text.disabled,
-                            fontWeight: 600 
-                          }}>
-                            {position.attributes.ignition ? 'Driving' : 'Stopped'}
+                          <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center' }}>
+                            {position.attributes.ignition ? (
+                              <span style={{ color: theme.palette.warning.main }}>Signal Lost</span>
+                            ) : (
+                              <span style={{ color: theme.palette.error.main }}>Offline</span>
+                            )}
                           </span>
-                          <span style={{ marginLeft: '4px', color: theme.palette.text.secondary }}>
-                            {formatStateDuration(stateDurationMs)}
-                          </span>
+                          {device.lastUpdate && (
+                            <span style={{ marginLeft: '4px', color: theme.palette.text.secondary }}>
+                              {formatTimeAgo(device.lastUpdate)}
+                            </span>
+                          )}
                         </>
-                      )
+                      ) : (
+                        stateDurationMs != null && (
+                          <>
+                            <span style={{ 
+                              color: position.attributes.ignition ? theme.palette.success.main : theme.palette.text.disabled,
+                              fontWeight: 600 
+                            }}>
+                              {position.attributes.ignition ? 'Driving' : 'Stopped'}
+                            </span>
+                            <span style={{ marginLeft: '4px', color: theme.palette.text.secondary }}>
+                              {formatStateDuration(stateDurationMs)}
+                            </span>
+                          </>
+                        )
+                      )}
+                    </div>
+
+                    {(position.attributes.hasOwnProperty('sat') || position.attributes.hasOwnProperty('rssi')) && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: theme.palette.text.secondary }}>
+                        {position.attributes.hasOwnProperty('sat') && (
+                          <Tooltip title="Satellites">
+                            <span style={{ display: 'flex', alignItems: 'center' }}>
+                              {(device.status === 'offline' || device.status === 'unknown') ? 0 : position.attributes.sat}
+                              <SatelliteAltIcon style={{ width: 16, height: 16, marginLeft: 2 }} />
+                            </span>
+                          </Tooltip>
+                        )}
+                        {position.attributes.hasOwnProperty('rssi') && (
+                          <Tooltip title="Signal (RSSI)">
+                            <span style={{ display: 'flex', alignItems: 'center' }}>
+                              {(device.status === 'offline' || device.status === 'unknown') ? 0 : position.attributes.rssi}
+                              <SignalCellularAltIcon style={{ width: 16, height: 16, marginLeft: 2 }} />
+                            </span>
+                          </Tooltip>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
@@ -765,6 +807,9 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
                           </div>
                         );
                       })}
+                      {topMetricKeys.length % 2 !== 0 && (
+                        <div className={classes.metric} />
+                      )}
                     </div>
                   )}
                   {hasAddress && (
@@ -797,11 +842,19 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
                   {bottomMetricKeys.length > 0 && (
                     <div className={classes.metrics}>
                       {bottomMetricKeys.map((key) => {
-                        const Icon = ROW_ICONS[key] || CircleIcon;
+                        let Icon = ROW_ICONS[key] || CircleIcon;
+                        let iconColor = 'inherit';
+                        if (key === 'power') {
+                          const val = position.hasOwnProperty(key) ? position[key] : position.attributes[key];
+                          if (val == null || val < 12) {
+                            Icon = BatteryAlertIcon;
+                            iconColor = '#f44336';
+                          }
+                        }
                         return (
                           <div key={key} className={classes.metric}>
                             <div className={classes.metricKey}>
-                              <Icon sx={{ fontSize: 13 }} />
+                              <Icon sx={{ fontSize: 13, color: iconColor }} />
                               {labelFor(key)}
                             </div>
                             <div className={classes.metricValue}>
@@ -810,6 +863,9 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
                           </div>
                         );
                       })}
+                      {bottomMetricKeys.length % 2 !== 0 && (
+                        <div className={classes.metric} />
+                      )}
                     </div>
                   )}
                   {rowKeys.length > 0 && (
@@ -839,6 +895,7 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
                 </CardContent>
               )}
               <CardActions className={classes.actions} disableSpacing>
+
                 <Tooltip title={t('reportReplay')}>
                   <IconButton
                     className={classes.actionButton}

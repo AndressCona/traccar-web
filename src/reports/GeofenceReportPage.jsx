@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useTheme } from '@mui/material/styles';
-import { Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
+import { Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import { formatNumericHours, formatTime } from '../common/util/formatter';
 import ReportFilter, { updateReportParams } from './components/ReportFilter';
 import { useTranslation } from '../common/components/LocalizationProvider';
@@ -132,7 +132,7 @@ const GeofenceReportPage = () => {
         </TableHead>
         <TableBody>
           {!loading ? (
-            items.map((item) => (
+            items.length > 0 ? (items.map((item) => (
               <TableRow
                 key={`${item.deviceId}_${item.geofenceId}_${item.startTime}_${item.endTime}`}
               >
@@ -141,7 +141,7 @@ const GeofenceReportPage = () => {
                   <TableCell key={key}>{formatValue(item, key)}</TableCell>
                 ))}
               </TableRow>
-            ))
+            ))) : searchParams.has('from') ? (<TableRow><TableCell colSpan={100} align="center"><Typography variant="body1" color="textSecondary" sx={{ py: 4 }}>{t('sharedNoData')}</Typography></TableCell></TableRow>) : null
           ) : (
             <TableShimmer columns={columns.length + 1} />
           )}

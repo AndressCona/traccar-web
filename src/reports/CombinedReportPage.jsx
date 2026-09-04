@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
+import { Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import ReportFilter from './components/ReportFilter';
 import { useTranslation } from '../common/components/LocalizationProvider';
 import PageLayout from '../common/components/PageLayout';
@@ -23,6 +24,8 @@ import { deviceEquality } from '../common/util/deviceEquality';
 const CombinedReportPage = () => {
   const { classes } = useReportStyles();
   const t = useTranslation();
+
+  const [searchParams] = useSearchParams();
 
   const devices = useSelector((state) => state.devices.items, deviceEquality(['id', 'name']));
 
@@ -93,15 +96,25 @@ const CombinedReportPage = () => {
             </TableHead>
             <TableBody>
               {!loading ? (
-                items.flatMap((item) =>
-                  item.events.map((event, index) => (
-                    <TableRow key={event.id}>
-                      <TableCell>{index ? '' : devices[item.deviceId].name}</TableCell>
-                      <TableCell>{formatTime(event.eventTime, 'seconds')}</TableCell>
-                      <TableCell>{t(prefixString('event', event.type))}</TableCell>
-                    </TableRow>
-                  )),
-                )
+                items.length > 0 ? (
+                  items.flatMap((item) =>
+                    item.events.map((event, index) => (
+                      <TableRow key={event.id}>
+                        <TableCell>{index ? '' : devices[item.deviceId].name}</TableCell>
+                        <TableCell>{formatTime(event.eventTime, 'seconds')}</TableCell>
+                        <TableCell>{t(prefixString('event', event.type))}</TableCell>
+                      </TableRow>
+                    )),
+                  )
+                ) : searchParams.has('from') ? (
+                  <TableRow>
+                    <TableCell colSpan={3} align="center">
+                      <Typography variant="body1" color="textSecondary" sx={{ py: 4 }}>
+                        {t('sharedNoData')}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : null
               ) : (
                 <TableShimmer columns={3} />
               )}

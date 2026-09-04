@@ -42,10 +42,13 @@ const useStyles = makeStyles()((theme) => ({
     overflow: 'hidden',
     boxShadow: '0 20px 50px rgba(0,0,0,.35)',
     [theme.breakpoints.down('md')]: {
-      width: '100%',
-      margin: 0,
-      borderRadius: 0,
-      boxShadow: 'none',
+      width: 'max-content',
+      maxWidth: `calc(100vw - ${theme.spacing(3)})`,
+      margin: theme.spacing(1.5),
+      left: '50%',
+      transform: 'translateX(-50%)',
+      borderRadius: theme.spacing(2),
+      boxShadow: '0 20px 50px rgba(0,0,0,.35)',
     },
   },
   title: {

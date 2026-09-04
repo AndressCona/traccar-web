@@ -11,7 +11,7 @@ import {
   TableRow,
   TableBody,
   TableCell,
-} from '@mui/material';
+ Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import {
   formatDistance,
@@ -184,14 +184,14 @@ const SummaryReportPage = () => {
         </TableHead>
         <TableBody>
           {!loading ? (
-            items.map((item) => (
+            items.length > 0 ? (items.map((item) => (
               <TableRow key={`${item.deviceId}_${Date.parse(item.startTime)}`}>
                 <TableCell>{devices[item.deviceId].name}</TableCell>
                 {columns.map((key) => (
                   <TableCell key={key}>{formatValue(item, key)}</TableCell>
                 ))}
               </TableRow>
-            ))
+            ))) : searchParams.has('from') ? (<TableRow><TableCell colSpan={100} align="center"><Typography variant="body1" color="textSecondary" sx={{ py: 4 }}>{t('sharedNoData')}</Typography></TableCell></TableRow>) : null
           ) : (
             <TableShimmer columns={columns.length + 1} />
           )}

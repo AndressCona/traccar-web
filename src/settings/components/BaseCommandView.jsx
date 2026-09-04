@@ -21,6 +21,8 @@ const BaseCommandView = ({
   const limitCommands = useRestriction('limitCommands');
 
   const textEnabled = useSelector((state) => state.session.server.textEnabled);
+  const device = useSelector((state) => state.devices.items[deviceId]);
+  const isNoCutoff = device?.name?.startsWith('*');
 
   const availableAttributes = useCommandAttributes(t);
 
@@ -29,18 +31,25 @@ const BaseCommandView = ({
 
   useAsyncTask(
     async ({ signal }) => {
+      let filterCommands = (list) => {
+        if (isNoCutoff) {
+          return list.filter((c) => c.type !== 'engineStop' && c.type !== 'engineResume');
+        }
+        return list;
+      };
+
       if (includeSaved) {
         const savedResponse = await fetchOrThrow(`/api/commands/send?deviceId=${deviceId}`, {
           signal,
         });
-        const saved = await savedResponse.json();
+        const saved = filterCommands(await savedResponse.json());
         let combined = saved.map((it) => ({ ...it, optionType: 'saved', key: `saved-${it.id}` }));
         if (!limitCommands) {
           const typesResponse = await fetchOrThrow(
             `/api/commands/types?${new URLSearchParams({ deviceId }).toString()}`,
             { signal },
           );
-          const types = await typesResponse.json();
+          const types = filterCommands(await typesResponse.json());
           combined = combined.concat(
             types.map((it) => ({ ...it, optionType: 'type', key: `type-${it.type}` })),
           );
@@ -48,11 +57,11 @@ const BaseCommandView = ({
         setOptions(combined);
       } else {
         const typesResponse = await fetchOrThrow('/api/commands/types', { signal });
-        const types = await typesResponse.json();
+        const types = filterCommands(await typesResponse.json());
         setOptions(types.map((it) => ({ ...it, optionType: 'type', key: `type-${it.type}` })));
       }
     },
-    [deviceId, includeSaved, limitCommands],
+    [deviceId, includeSaved, limitCommands, isNoCutoff],
   );
 
   useEffect(() => {
