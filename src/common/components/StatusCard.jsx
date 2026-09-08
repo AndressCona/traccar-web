@@ -44,6 +44,7 @@ import PowerOffIcon from '@mui/icons-material/PowerOff';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import SatelliteAltIcon from '@mui/icons-material/SatelliteAlt';
 import SignalCellularAltIcon from '@mui/icons-material/SignalCellularAlt';
+import StreetviewIcon from '@mui/icons-material/Streetview';
 import NoSignalIcon from '../../resources/images/data/no-signal.svg?react';
 
 import { useTranslation } from './LocalizationProvider';
@@ -829,12 +830,22 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
                           />
                         </div>
                       </div>
+                      <Tooltip title="Street View">
+                        <IconButton
+                          size="small"
+                          onClick={() => setStreetViewOpen(true)}
+                          disabled={!position}
+                          style={{ marginLeft: 8, flexShrink: 0, color: '#f57c00' }}
+                        >
+                          <StreetviewIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                       <Tooltip title={t('sharedExtra')}>
                         <IconButton
                           size="small"
                           onClick={(e) => setAnchorEl(e.currentTarget)}
                           disabled={!position}
-                          style={{ marginLeft: 8, flexShrink: 0 }}
+                          style={{ marginLeft: 2, flexShrink: 0 }}
                         >
                           <PendingIcon fontSize="small" />
                         </IconButton>

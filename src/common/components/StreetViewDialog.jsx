@@ -1,6 +1,5 @@
 // Source: Google Maps Platform Code Assist
 import { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
 import {
   Dialog,
   DialogTitle,
@@ -11,17 +10,13 @@ import {
   Button,
   CircularProgress,
   Box,
-  TextField,
   useTheme,
   useMediaQuery,
-  Collapse,
 } from '@mui/material';
 import { makeStyles } from 'tss-react/mui';
 import StreetviewIcon from '@mui/icons-material/Streetview';
 import CloseIcon from '@mui/icons-material/Close';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import VpnKeyIcon from '@mui/icons-material/VpnKey';
-import InfoIcon from '@mui/icons-material/Info';
 import { useTranslation } from './LocalizationProvider';
 import { useAttributePreference } from '../util/preferences';
 import { DEFAULT_GOOGLE_KEY } from '../util/googleConfig';
@@ -53,8 +48,8 @@ const useStyles = makeStyles()((theme) => ({
     width: 36,
     height: 36,
     borderRadius: theme.spacing(1),
-    backgroundColor: theme.palette.primary.main,
-    color: theme.palette.primary.contrastText,
+    backgroundColor: '#f57c00',
+    color: '#fff',
     flexShrink: 0,
   },
   content: {
@@ -101,8 +96,8 @@ const useStyles = makeStyles()((theme) => ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.palette.primary.main + '18',
-    color: theme.palette.primary.main,
+    backgroundColor: 'rgba(245, 124, 0, 0.12)',
+    color: '#f57c00',
   },
 }));
 
@@ -112,16 +107,10 @@ const StreetViewDialog = ({ open, onClose, position, deviceName }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const admin = useSelector((state) => Boolean(state.session.user?.administrator));
-
-  // Preference from Traccar attributes, local storage or default configured key
   const traccarGoogleKey = useAttributePreference('googleKey');
-  const [localKey, setLocalKey] = useState(() => localStorage.getItem('googleKey') || '');
-  const [inputKey, setInputKey] = useState('');
-  const [showKeyInput, setShowKeyInput] = useState(false);
   const [iframeLoading, setIframeLoading] = useState(true);
 
-  const activeKey = traccarGoogleKey || localKey || DEFAULT_GOOGLE_KEY;
+  const activeKey = traccarGoogleKey || DEFAULT_GOOGLE_KEY;
 
   const directStreetViewUrl = position
     ? `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${position.latitude}%2C${position.longitude}&heading=${position.course || 0}`
@@ -134,19 +123,8 @@ const StreetViewDialog = ({ open, onClose, position, deviceName }) => {
   useEffect(() => {
     if (open) {
       setIframeLoading(true);
-      setShowKeyInput(false);
     }
   }, [open, position?.latitude, position?.longitude]);
-
-  const handleSaveKey = () => {
-    const trimmed = inputKey.trim();
-    if (trimmed) {
-      localStorage.setItem('googleKey', trimmed);
-      setLocalKey(trimmed);
-      setShowKeyInput(false);
-      setIframeLoading(true);
-    }
-  };
 
   return (
     <Dialog
@@ -168,7 +146,7 @@ const StreetViewDialog = ({ open, onClose, position, deviceName }) => {
           </div>
           <Box sx={{ minWidth: 0 }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
-              {t('linkStreetView')}
+              Street View
             </Typography>
             {deviceName && (
               <Typography variant="caption" color="textSecondary" noWrap sx={{ display: 'block' }}>
@@ -178,14 +156,7 @@ const StreetViewDialog = ({ open, onClose, position, deviceName }) => {
           </Box>
         </div>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          {admin && (
-            <Tooltip title="Configurar clave de Google">
-              <IconButton size="small" onClick={() => setShowKeyInput((prev) => !prev)}>
-                <VpnKeyIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          )}
-          <Tooltip title="Abrir en Google Maps (gratis en nueva pestaña)">
+          <Tooltip title="Open in Google Maps">
             <IconButton
               component="a"
               href={directStreetViewUrl}
@@ -196,7 +167,7 @@ const StreetViewDialog = ({ open, onClose, position, deviceName }) => {
               <OpenInNewIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-          <Tooltip title={t('sharedClose')}>
+          <Tooltip title="Close">
             <IconButton onClick={onClose} size="small">
               <CloseIcon fontSize="small" />
             </IconButton>
@@ -205,7 +176,6 @@ const StreetViewDialog = ({ open, onClose, position, deviceName }) => {
       </DialogTitle>
 
       <DialogContent className={classes.content}>
-        {/* If an active key exists, render the official Google Maps Embed iframe (100% Free & Unlimited) */}
         {embedUrl ? (
           <>
             <iframe
@@ -219,15 +189,14 @@ const StreetViewDialog = ({ open, onClose, position, deviceName }) => {
             />
             {iframeLoading && (
               <div className={classes.overlay}>
-                <CircularProgress size={40} />
+                <CircularProgress size={40} sx={{ color: '#f57c00' }} />
                 <Typography variant="body2" color="textSecondary">
-                  Cargando Street View...
+                  Loading Street View...
                 </Typography>
               </div>
             )}
           </>
         ) : (
-          /* When no API key is configured, show friendly view with direct free link and key config option */
           <div className={classes.overlay}>
             <div className={classes.cardBox}>
               <div className={classes.emptyIconBox}>
@@ -235,11 +204,11 @@ const StreetViewDialog = ({ open, onClose, position, deviceName }) => {
               </div>
 
               <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                Street View en Google Maps
+                Street View
               </Typography>
 
               <Typography variant="body2" color="textSecondary" sx={{ lineHeight: 1.5 }}>
-                Google no permite incrustar directamente su web completa en un iframe debido a sus políticas de seguridad (<code>X-Frame-Options</code>).
+                Open this location directly in Google Maps.
               </Typography>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, width: '100%', mt: 1 }}>
@@ -255,63 +224,15 @@ const StreetViewDialog = ({ open, onClose, position, deviceName }) => {
                     borderRadius: 2,
                     fontWeight: 600,
                     py: 1.2,
+                    backgroundColor: '#f57c00',
+                    '&:hover': {
+                      backgroundColor: '#e65100',
+                    },
                   }}
                 >
-                  Abrir Street View en Google Maps (Gratis)
-                </Button>
-
-                <Button
-                  variant="text"
-                  size="small"
-                  onClick={() => setShowKeyInput((v) => !v)}
-                  startIcon={<VpnKeyIcon />}
-                  sx={{ textTransform: 'none', color: 'text.secondary', fontSize: '0.85rem' }}
-                >
-                  {showKeyInput
-                    ? 'Ocultar configuración de clave'
-                    : '¿Deseas verlo incrustado aquí dentro? (Embed API gratuito)'}
+                  Open in Google Maps
                 </Button>
               </Box>
-
-              <Collapse in={showKeyInput} sx={{ width: '100%' }}>
-                <Box
-                  sx={{
-                    mt: 1,
-                    p: 2,
-                    borderRadius: 2,
-                    border: `1px solid ${theme.palette.divider}`,
-                    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : '#f9f9f9',
-                    textAlign: 'left',
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                    <InfoIcon fontSize="small" color="primary" />
-                    <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                      Google Maps Embed API es 100% gratuita y sin límites
-                    </Typography>
-                  </Box>
-                  <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 1.5 }}>
-                    Para mostrar el visor embebido dentro de este modal, Google solo exige que incluyas una clave API en la URL (su uso en Embed es completamente gratis: $0 USD).
-                  </Typography>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <TextField
-                      size="small"
-                      fullWidth
-                      placeholder="Pega tu clave de Google Maps API"
-                      value={inputKey}
-                      onChange={(e) => setInputKey(e.target.value)}
-                    />
-                    <Button
-                      variant="contained"
-                      onClick={handleSaveKey}
-                      disabled={!inputKey.trim()}
-                      sx={{ textTransform: 'none', whiteSpace: 'nowrap' }}
-                    >
-                      Guardar
-                    </Button>
-                  </Box>
-                </Box>
-              </Collapse>
             </div>
           </div>
         )}
