@@ -52,6 +52,7 @@ import PositionValue from './PositionValue';
 import AddressValue from './AddressValue';
 import AccumulatorsDialog from './AccumulatorsDialog';
 import ShareDialog from './ShareDialog';
+import StreetViewDialog from './StreetViewDialog';
 import BaseCommandView from '../../settings/components/BaseCommandView';
 import { useDeviceReadonly, useRestriction } from '../util/permissions';
 import usePositionAttributes from '../attributes/usePositionAttributes';
@@ -525,6 +526,7 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
 
   const [accumulatorsOpen, setAccumulatorsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [streetViewOpen, setStreetViewOpen] = useState(false);
 
   const openCommand = () => {
     setCommandSavedId(0);
@@ -956,9 +958,10 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
             {t('linkAppleMaps')}
           </MenuItem>
           <MenuItem
-            component="a"
-            target="_blank"
-            href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${position.latitude}%2C${position.longitude}&heading=${position.course}`}
+            onClick={() => {
+              setStreetViewOpen(true);
+              setAnchorEl(null);
+            }}
           >
             {t('linkStreetView')}
           </MenuItem>
@@ -1024,6 +1027,12 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
         open={shareOpen}
         onClose={() => setShareOpen(false)}
         deviceId={deviceId}
+      />
+      <StreetViewDialog
+        open={streetViewOpen}
+        onClose={() => setStreetViewOpen(false)}
+        position={position}
+        deviceName={device?.name}
       />
     </>
   );
