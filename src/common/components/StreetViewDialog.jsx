@@ -14,9 +14,9 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import { makeStyles } from 'tss-react/mui';
-import StreetviewIcon from '@mui/icons-material/Streetview';
 import CloseIcon from '@mui/icons-material/Close';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import GoogleStreetViewIcon from './GoogleStreetViewIcon';
 import { useTranslation } from './LocalizationProvider';
 import { useAttributePreference } from '../util/preferences';
 import { DEFAULT_GOOGLE_KEY } from '../util/googleConfig';
@@ -45,11 +45,6 @@ const useStyles = makeStyles()((theme) => ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: 36,
-    height: 36,
-    borderRadius: theme.spacing(1),
-    backgroundColor: '#f57c00',
-    color: '#fff',
     flexShrink: 0,
   },
   content: {
@@ -90,14 +85,10 @@ const useStyles = makeStyles()((theme) => ({
     gap: theme.spacing(2),
   },
   emptyIconBox: {
-    width: 60,
-    height: 60,
-    borderRadius: '50%',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(245, 124, 0, 0.12)',
-    color: '#f57c00',
+    marginBottom: theme.spacing(1),
   },
 }));
 
@@ -142,7 +133,7 @@ const StreetViewDialog = ({ open, onClose, position, deviceName }) => {
       <DialogTitle className={classes.titleBar} component="div">
         <div className={classes.titleLeft}>
           <div className={classes.iconBadge}>
-            <StreetviewIcon fontSize="small" />
+            <GoogleStreetViewIcon size={34} />
           </div>
           <Box sx={{ minWidth: 0 }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
@@ -200,7 +191,7 @@ const StreetViewDialog = ({ open, onClose, position, deviceName }) => {
           <div className={classes.overlay}>
             <div className={classes.cardBox}>
               <div className={classes.emptyIconBox}>
-                <StreetviewIcon sx={{ fontSize: 32 }} />
+                <GoogleStreetViewIcon size={56} />
               </div>
 
               <Typography variant="h6" sx={{ fontWeight: 700 }}>
@@ -224,9 +215,9 @@ const StreetViewDialog = ({ open, onClose, position, deviceName }) => {
                     borderRadius: 2,
                     fontWeight: 600,
                     py: 1.2,
-                    backgroundColor: '#f57c00',
+                    backgroundColor: '#1a73e8',
                     '&:hover': {
-                      backgroundColor: '#e65100',
+                      backgroundColor: '#1557b0',
                     },
                   }}
                 >

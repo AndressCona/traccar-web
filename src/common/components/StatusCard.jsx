@@ -44,7 +44,7 @@ import PowerOffIcon from '@mui/icons-material/PowerOff';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import SatelliteAltIcon from '@mui/icons-material/SatelliteAlt';
 import SignalCellularAltIcon from '@mui/icons-material/SignalCellularAlt';
-import StreetviewIcon from '@mui/icons-material/Streetview';
+import GoogleStreetViewIcon from './GoogleStreetViewIcon';
 import NoSignalIcon from '../../resources/images/data/no-signal.svg?react';
 
 import { useTranslation } from './LocalizationProvider';
@@ -835,9 +835,9 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
                           size="small"
                           onClick={() => setStreetViewOpen(true)}
                           disabled={!position}
-                          style={{ marginLeft: 8, flexShrink: 0, color: '#f57c00' }}
+                          style={{ marginLeft: 8, flexShrink: 0, padding: 4 }}
                         >
-                          <StreetviewIcon fontSize="small" />
+                          <GoogleStreetViewIcon size={22} />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title={t('sharedExtra')}>
@@ -967,14 +967,6 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
             href={`https://maps.apple.com/?ll=${position.latitude},${position.longitude}`}
           >
             {t('linkAppleMaps')}
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              setStreetViewOpen(true);
-              setAnchorEl(null);
-            }}
-          >
-            {t('linkStreetView')}
           </MenuItem>
           {navigationAppTitle && navigationAppLink && (
             <MenuItem
