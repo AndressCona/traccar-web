@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Accordion,
@@ -38,7 +38,12 @@ const DevicePage = () => {
   const [searchParams] = useSearchParams();
   const uniqueId = searchParams.get('uniqueId');
 
-  const [item, setItem] = useState(uniqueId ? { uniqueId } : null);
+  const defaultItem = useMemo(() => ({
+    category: 'car',
+    ...(uniqueId ? { uniqueId } : {}),
+  }), [uniqueId]);
+
+  const [item, setItem] = useState(uniqueId ? { uniqueId, category: 'car' } : null);
   const [showQr, setShowQr] = useState(false);
   const [imageFile, setImageFile] = useState(null);
 
@@ -64,6 +69,7 @@ const DevicePage = () => {
       endpoint="devices"
       item={item}
       setItem={setItem}
+      defaultItem={defaultItem}
       validate={validate}
       menu={<SettingsMenu />}
       breadcrumbs={['settingsTitle', 'sharedDevice']}
@@ -116,7 +122,7 @@ const DevicePage = () => {
                 label={t('deviceContact')}
               />
               <SelectField
-                value={item.category || 'default'}
+                value={item.category || (item.id ? 'default' : 'car')}
                 onChange={(event) => setItem({ ...item, category: event.target.value })}
                 data={deviceCategories
                   .map((category) => ({
