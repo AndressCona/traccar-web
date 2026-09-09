@@ -1036,6 +1036,7 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
         onClose={() => setStreetViewOpen(false)}
         position={position}
         device={device}
+        deviceId={deviceId}
         deviceName={device?.name}
       />
     </>
