@@ -17,12 +17,10 @@ import { makeStyles } from 'tss-react/mui';
 import CloseIcon from '@mui/icons-material/Close';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
-import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import SpeedIcon from '@mui/icons-material/Speed';
 import RouteIcon from '@mui/icons-material/Route';
 import BatteryFullIcon from '@mui/icons-material/BatteryFull';
-import RoomIcon from '@mui/icons-material/Room';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
@@ -144,10 +142,10 @@ const useStyles = makeStyles()((theme) => ({
     backgroundColor: theme.palette.background.paper,
     borderTop: `1px solid ${theme.palette.divider}`,
     boxShadow: '0 -4px 16px rgba(0, 0, 0, 0.12)',
-    padding: theme.spacing(1, 1.5, 1.5),
+    padding: theme.spacing(0.75, 1.5, 1.25),
     display: 'flex',
     flexDirection: 'column',
-    gap: theme.spacing(1),
+    gap: theme.spacing(0.75),
     zIndex: 4,
     transition: 'all 0.25s ease',
   },
@@ -156,42 +154,77 @@ const useStyles = makeStyles()((theme) => ({
     height: 4,
     borderRadius: 2,
     backgroundColor: theme.palette.divider,
-    margin: '0 auto 6px auto',
+    margin: '0 auto',
     cursor: 'pointer',
+  },
+  panelBody: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(1.25),
+    width: '100%',
+  },
+  imageWrapper: {
+    width: 95,
+    height: 84,
+    borderRadius: theme.spacing(1.5),
+    overflow: 'hidden',
+    flexShrink: 0,
+    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    border: `1px solid ${theme.palette.divider}`,
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    display: 'block',
+  },
+  panelRight: {
+    flex: 1,
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: theme.spacing(0.4),
+  },
+  panelHeaderRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minWidth: 0,
   },
   metricsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: theme.spacing(0.75),
-    textAlign: 'center',
+    gridTemplateColumns: 'repeat(2, 1fr)',
+    gap: theme.spacing(0.6),
+    width: '100%',
   },
   metricCell: {
     backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
-    borderRadius: theme.spacing(1.2),
-    padding: theme.spacing(0.75, 0.5),
+    borderRadius: theme.spacing(1),
+    padding: theme.spacing(0.4, 0.75),
     display: 'flex',
     flexDirection: 'column',
-    alignItems: 'center',
     justifyContent: 'center',
+    minWidth: 0,
   },
   metricLabel: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 3,
-    fontSize: '0.68rem',
+    fontSize: '0.66rem',
     color: theme.palette.text.secondary,
     lineHeight: 1.1,
-    marginBottom: 2,
   },
   metricVal: {
     fontWeight: 700,
     fontSize: '0.82rem',
-    lineHeight: 1.2,
+    lineHeight: 1.25,
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
-    maxWidth: '100%',
+    marginTop: 1,
   },
   metricUnit: {
     fontSize: '0.65rem',
@@ -291,7 +324,6 @@ const StreetViewDialog = ({ open, onClose, position, device, deviceName }) => {
   const statusDotColor = statusColor === 'success' ? '#4caf50' : statusColor === 'error' ? '#f44336' : statusColor === 'warning' ? '#ff9800' : '#9e9e9e';
   const statusText = device?.status ? formatStatus(device.status, t) : 'Online';
 
-  const addressText = position?.address || (position ? `${position.latitude.toFixed(5)}, ${position.longitude.toFixed(5)}` : '');
   const deviceImage = device?.attributes?.deviceImage;
 
   return (
@@ -317,7 +349,7 @@ const StreetViewDialog = ({ open, onClose, position, device, deviceName }) => {
               Street View
             </Typography>
             <Typography variant="caption" color="textSecondary" noWrap sx={{ display: 'block' }}>
-              {displayName} {position ? `· ${position.latitude.toFixed(5)}, ${position.longitude.toFixed(5)}` : ''}
+              {displayName}
             </Typography>
           </Box>
         </div>
@@ -392,135 +424,105 @@ const StreetViewDialog = ({ open, onClose, position, device, deviceName }) => {
                   onClick={() => setShowDetails(false)}
                   title="Hide Vehicle Info"
                 />
-                
-                {/* Header row: image/icon, name, status, collapse button */}
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+
+                <div className={classes.panelBody}>
+                  {/* Left: Big vehicle image */}
+                  <div className={classes.imageWrapper}>
                     {deviceImage ? (
-                      <Box
-                        component="img"
+                      <img
+                        className={classes.image}
                         src={`/api/media/${device?.uniqueId}/${deviceImage}`}
                         alt={displayName}
-                        sx={{ width: 34, height: 34, borderRadius: 1.5, objectFit: 'cover', flexShrink: 0 }}
                       />
                     ) : (
-                      <Box
-                        sx={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: 1.5,
-                          bgcolor: 'action.hover',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0,
-                        }}
-                      >
-                        <DirectionsCarIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
-                      </Box>
+                      <DirectionsCarIcon sx={{ fontSize: 44, color: 'text.secondary', opacity: 0.6 }} />
                     )}
-                    <Box sx={{ minWidth: 0 }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, lineHeight: 1.2 }} noWrap>
-                        {displayName}
-                      </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.2 }}>
+                  </div>
+
+                  {/* Right: Info & 2x2 Grid */}
+                  <div className={classes.panelRight}>
+                    {/* Header: Name + Status + Collapse button */}
+                    <div className={classes.panelHeaderRow}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, minWidth: 0 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.92rem', lineHeight: 1.2 }} noWrap>
+                          {displayName}
+                        </Typography>
                         <Box
                           sx={{
-                            width: 7,
-                            height: 7,
-                            borderRadius: '50%',
-                            bgcolor: statusDotColor,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                            px: 0.8,
+                            py: 0.2,
+                            borderRadius: 10,
+                            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
                           }}
-                        />
-                        <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
-                          {statusText}
-                        </Typography>
+                        >
+                          <Box
+                            sx={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: '50%',
+                              bgcolor: statusDotColor,
+                            }}
+                          />
+                          <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.68rem', color: 'text.primary', lineHeight: 1 }}>
+                            {statusText}
+                          </Typography>
+                        </Box>
                       </Box>
-                    </Box>
-                  </Box>
-                  <Tooltip title="Full Screen">
-                    <IconButton size="small" onClick={() => setShowDetails(false)}>
-                      <KeyboardArrowDownIcon />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
+                      <IconButton
+                        size="small"
+                        onClick={() => setShowDetails(false)}
+                        sx={{ p: 0.25, color: 'text.secondary', ml: 0.5 }}
+                        title="Hide Vehicle Info"
+                      >
+                        <KeyboardArrowDownIcon fontSize="small" />
+                      </IconButton>
+                    </div>
 
-                {/* 4-Metric Grid */}
-                <div className={classes.metricsGrid}>
-                  <div className={classes.metricCell}>
-                    <span className={classes.metricLabel}>
-                      <SpeedIcon sx={{ fontSize: 13, color: '#1a73e8' }} /> Speed
-                    </span>
-                    <span className={classes.metricVal}>
-                      {speedValue != null ? speedValue : '--'}
-                      <span className={classes.metricUnit}>{speedUnitLabel}</span>
-                    </span>
-                  </div>
+                    {/* 2x2 Grid of Metrics */}
+                    <div className={classes.metricsGrid}>
+                      <div className={classes.metricCell}>
+                        <span className={classes.metricLabel}>
+                          <SpeedIcon sx={{ fontSize: 13, color: '#1a73e8' }} /> Speed
+                        </span>
+                        <span className={classes.metricVal}>
+                          {speedValue != null ? speedValue : '--'}
+                          <span className={classes.metricUnit}>{speedUnitLabel}</span>
+                        </span>
+                      </div>
 
-                  <div className={classes.metricCell}>
-                    <span className={classes.metricLabel}>
-                      <RouteIcon sx={{ fontSize: 13, color: '#4caf50' }} /> Odometer
-                    </span>
-                    <span className={classes.metricVal}>
-                      {distanceValue != null ? distanceValue : '--'}
-                      <span className={classes.metricUnit}>{distanceUnitLabel}</span>
-                    </span>
-                  </div>
+                      <div className={classes.metricCell}>
+                        <span className={classes.metricLabel}>
+                          <RouteIcon sx={{ fontSize: 13, color: '#4caf50' }} /> Odometer
+                        </span>
+                        <span className={classes.metricVal}>
+                          {distanceValue != null ? distanceValue : '--'}
+                          <span className={classes.metricUnit}>{distanceUnitLabel}</span>
+                        </span>
+                      </div>
 
-                  <div className={classes.metricCell}>
-                    <span className={classes.metricLabel}>
-                      <BatteryFullIcon sx={{ fontSize: 13, color: isLowPower ? '#f44336' : '#ff9800' }} /> Power
-                    </span>
-                    <span className={classes.metricVal} style={{ color: isLowPower ? '#f44336' : 'inherit' }}>
-                      {displayPower}
-                    </span>
-                  </div>
+                      <div className={classes.metricCell}>
+                        <span className={classes.metricLabel}>
+                          <BatteryFullIcon sx={{ fontSize: 13, color: isLowPower ? '#f44336' : '#ff9800' }} /> Power
+                        </span>
+                        <span className={classes.metricVal} style={{ color: isLowPower ? '#f44336' : 'inherit' }}>
+                          {displayPower}
+                        </span>
+                      </div>
 
-                  <div className={classes.metricCell}>
-                    <span className={classes.metricLabel}>
-                      <AccessTimeIcon sx={{ fontSize: 13 }} /> Report
-                    </span>
-                    <span className={classes.metricVal}>
-                      {reportTimeAgo}
-                    </span>
+                      <div className={classes.metricCell}>
+                        <span className={classes.metricLabel}>
+                          <AccessTimeIcon sx={{ fontSize: 13 }} /> Report
+                        </span>
+                        <span className={classes.metricVal}>
+                          {reportTimeAgo}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-                {/* Address row */}
-                {addressText && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0 }}>
-                    <RoomIcon sx={{ fontSize: 15, color: '#e53935', flexShrink: 0 }} />
-                    <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }} noWrap>
-                      {addressText}
-                    </Typography>
-                  </Box>
-                )}
-
-                {/* Action button */}
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<OpenInNewIcon fontSize="small" />}
-                  href={directStreetViewUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  fullWidth
-                  sx={{
-                    textTransform: 'none',
-                    borderRadius: 1.5,
-                    fontWeight: 600,
-                    py: 0.6,
-                    fontSize: '0.8rem',
-                    borderColor: theme.palette.divider,
-                    color: theme.palette.text.primary,
-                    '&:hover': {
-                      borderColor: '#1a73e8',
-                      color: '#1a73e8',
-                    },
-                  }}
-                >
-                  Open in Google Maps
-                </Button>
               </div>
             )}
           </>
