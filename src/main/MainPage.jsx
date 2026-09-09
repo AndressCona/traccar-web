@@ -258,6 +258,7 @@ const MainPage = () => {
           position={selectedPosition}
           onClose={() => dispatch(devicesActions.selectId(null))}
           onEventsClick={onDeviceEventsClick}
+          devicesOpen={devicesOpen}
         />
       )}
     </div>

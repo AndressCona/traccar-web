@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import dayjs from 'dayjs';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Rnd } from 'react-rnd';
 import {
   Card,
@@ -21,13 +20,12 @@ import {
   Button,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import { makeStyles } from 'tss-react/mui';
-import CircularProgress from '@mui/material/CircularProgress';
 import CloseIcon from '@mui/icons-material/Close';
 import RouteIcon from '@mui/icons-material/Route';
 import SendIcon from '@mui/icons-material/Send';
 import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
 import PendingIcon from '@mui/icons-material/Pending';
 import SpeedIcon from '@mui/icons-material/Speed';
 import RoomIcon from '@mui/icons-material/Room';
@@ -37,15 +35,14 @@ import BatteryAlertIcon from '@mui/icons-material/BatteryAlert';
 import ExploreIcon from '@mui/icons-material/Explore';
 import HeightIcon from '@mui/icons-material/Height';
 import CircleIcon from '@mui/icons-material/Circle';
-import VideocamIcon from '@mui/icons-material/Videocam';
 import ShareIcon from '@mui/icons-material/Share';
 import ErrorIcon from '@mui/icons-material/Error';
 import PowerOffIcon from '@mui/icons-material/PowerOff';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import SatelliteAltIcon from '@mui/icons-material/SatelliteAlt';
 import SignalCellularAltIcon from '@mui/icons-material/SignalCellularAlt';
+import DeleteIcon from '@mui/icons-material/Delete';
 import GoogleStreetViewIcon from './GoogleStreetViewIcon';
-import NoSignalIcon from '../../resources/images/data/no-signal.svg?react';
 
 import { useTranslation } from './LocalizationProvider';
 import RemoveDialog from './RemoveDialog';
@@ -55,7 +52,8 @@ import AccumulatorsDialog from './AccumulatorsDialog';
 import ShareDialog from './ShareDialog';
 import StreetViewDialog from './StreetViewDialog';
 import BaseCommandView from '../../settings/components/BaseCommandView';
-import { useDeviceReadonly, useRestriction } from '../util/permissions';
+import DevicePage from '../../settings/DevicePage';
+import { useDeviceReadonly } from '../util/permissions';
 import usePositionAttributes from '../attributes/usePositionAttributes';
 import { devicesActions } from '../../store';
 import { useCatch, useCatchCallback } from '../../reactHelper';
@@ -141,6 +139,45 @@ const useStyles = makeStyles()((theme, { statusColor }) => ({
       backgroundColor: theme.palette.error.dark,
     },
   },
+  minimizedButton: {
+    width: 60,
+    height: 60,
+    borderRadius: '50%',
+    overflow: 'hidden',
+    boxShadow: theme.shadows[8],
+    pointerEvents: 'auto',
+    cursor: 'pointer',
+    border: `3px solid ${theme.palette.background.paper}`,
+  },
+  minimizedImage: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+  },
+  dropZone: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: 120,
+    background: `linear-gradient(to bottom, ${theme.palette.error.main}cc, transparent)`,
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    paddingTop: theme.spacing(3),
+    zIndex: 10,
+    pointerEvents: 'none',
+    opacity: 0,
+    transition: 'opacity 0.2s',
+  },
+  dropZoneActive: {
+    opacity: 1,
+  },
+  dropZoneIcon: {
+    color: theme.palette.common.white,
+    fontSize: 48,
+    filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,0.5))',
+  },
   pill: {
     position: 'absolute',
     left: theme.spacing(1),
@@ -157,9 +194,10 @@ const useStyles = makeStyles()((theme, { statusColor }) => ({
   },
   pillDot: {
     fontSize: '8px !important',
-    color: theme.palette.mode === 'light' 
-      ? theme.palette[statusColor]?.light || theme.palette.neutral.light
-      : theme.palette[statusColor]?.main || theme.palette.neutral.main,
+    color:
+      theme.palette.mode === 'light'
+        ? theme.palette[statusColor]?.light || theme.palette.neutral.light
+        : theme.palette[statusColor]?.main || theme.palette.neutral.main,
   },
   head: {
     padding: theme.spacing(1, 2),
@@ -336,27 +374,96 @@ const useStyles = makeStyles()((theme, { statusColor }) => ({
     },
     [theme.breakpoints.down('md')]: {
       left: '50%',
-      bottom: `calc(${theme.spacing(3)} + ${theme.dimensions.bottomBarHeight}px)`,
+      bottom: `calc(${theme.dimensions.bottomBarHeight}px - 30px)`,
       transform: 'translateX(-50%)',
     },
   },
+
 }));
 
-const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick }) => {
+const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick, devicesOpen }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const t = useTranslation();
 
-  const readonly = useRestriction('readonly');
   const deviceReadonly = useDeviceReadonly();
   const theme = useTheme();
+
+  const [minimized, setMinimized] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const [isNearTop, setIsNearTop] = useState(false);
+
+  const handleDrag = (e) => {
+    if (minimized && isMobile) {
+      if (!isDragging) setIsDragging(true);
+      
+      let clientY;
+      if (e.changedTouches && e.changedTouches.length > 0) {
+         clientY = e.changedTouches[0].clientY;
+      } else if (e.touches && e.touches.length > 0) {
+         clientY = e.touches[0].clientY;
+      } else {
+         clientY = e.clientY;
+      }
+      
+      if (clientY < 180) {
+        setIsNearTop(true);
+      } else {
+        setIsNearTop(false);
+      }
+    }
+  };
+
+  const handleDragStop = (e) => {
+    if (minimized && isMobile) {
+      setIsDragging(false);
+      setIsNearTop(false);
+      
+      let clientY, clientX;
+      if (e.changedTouches && e.changedTouches.length > 0) {
+         clientY = e.changedTouches[0].clientY;
+         clientX = e.changedTouches[0].clientX;
+      } else {
+         clientY = e.clientY;
+         clientX = e.clientX;
+      }
+      
+      const dropZoneHeight = 120;
+      const dropZoneWidth = 200;
+      const windowHeight = window.innerHeight;
+      const windowWidth = window.innerWidth;
+
+      if (clientY < dropZoneHeight && 
+          clientX > windowWidth / 2 - dropZoneWidth / 2 &&
+          clientX < windowWidth / 2 + dropZoneWidth / 2) {
+         onClose();
+      }
+    }
+  };
+
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+  const handleMinimize = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (isMobile) {
+      setMinimized(true);
+    } else {
+      onClose();
+    }
+  };
 
   const shareDisabled = useSelector((state) => state.session.server.attributes.disableShare);
   const user = useSelector((state) => state.session.user);
   const device = useSelector((state) => state.devices.items[deviceId]);
 
-  const isSignalLost = device && (device.status === 'offline' || device.status === 'unknown') && position && position.attributes.ignition;
-  const statusColor = isSignalLost ? 'warning' : (device ? getStatusColor(device.status) : 'neutral');
+  const isSignalLost =
+    device &&
+    (device.status === 'offline' || device.status === 'unknown') &&
+    position &&
+    position.attributes.ignition;
+  const statusColor = isSignalLost ? 'warning' : device ? getStatusColor(device.status) : 'neutral';
   const { classes } = useStyles({ statusColor });
 
   const noCutoff = device?.name.startsWith('*');
@@ -406,7 +513,7 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
     let active = true;
     const fetchStateDuration = async () => {
       if (!deviceId) return;
-      
+
       const fetchWithFrom = async (days) => {
         const to = new Date().toISOString();
         const from = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
@@ -416,11 +523,11 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
         query.append('to', to);
         query.append('type', 'deviceStopped');
         query.append('type', 'deviceMoving');
-        
+
         const response = await fetchOrThrow(`/api/reports/events?${query.toString()}`);
         return await response.json();
       };
-      
+
       try {
         let data;
         try {
@@ -428,12 +535,14 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
         } catch (e) {
           data = await fetchWithFrom(31);
         }
-        
+
         if (!active) return;
-        
-        const sorted = data.sort((a, b) => new Date(b.eventTime).getTime() - new Date(a.eventTime).getTime());
+
+        const sorted = data.sort(
+          (a, b) => new Date(b.eventTime).getTime() - new Date(a.eventTime).getTime(),
+        );
         const lastEvent = sorted[0];
-        
+
         if (lastEvent) {
           setStateDurationMs(Date.now() - new Date(lastEvent.eventTime).getTime());
         } else {
@@ -443,12 +552,12 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
         // ignore
       }
     };
-    
+
     fetchStateDuration();
     const interval = setInterval(() => {
       setStateDurationMs((prev) => (prev != null ? prev + 1000 : null));
     }, 1000); // tick every second
-    
+
     return () => {
       active = false;
       clearInterval(interval);
@@ -527,6 +636,7 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
 
   const [accumulatorsOpen, setAccumulatorsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [streetViewOpen, setStreetViewOpen] = useState(false);
 
   const openCommand = () => {
@@ -578,14 +688,19 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
 
   const itemKeys = position
     ? CARD_FIELDS.filter(
-        (key) => key === 'power' || position.hasOwnProperty(key) || position.attributes.hasOwnProperty(key),
+        (key) =>
+          key === 'power' ||
+          position.hasOwnProperty(key) ||
+          position.attributes.hasOwnProperty(key),
       )
     : [];
   const hasAddress = itemKeys.includes('address');
   const otherKeys = itemKeys.filter((key) => key !== 'address');
   const topMetricKeys = otherKeys.filter((key) => ['speed', 'totalDistance'].includes(key));
   const bottomMetricKeys = otherKeys.filter((key) => ['power', 'fixTime'].includes(key));
-  const rowKeys = otherKeys.filter((key) => !['speed', 'totalDistance', 'power', 'fixTime'].includes(key));
+  const rowKeys = otherKeys.filter(
+    (key) => !['speed', 'totalDistance', 'power', 'fixTime'].includes(key),
+  );
 
   const labelFor = (key) => LABEL_OVERRIDES[key] || positionAttributes[key]?.name || key;
 
@@ -633,9 +748,7 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
       }
       return (
         <>
-          <span style={{ color: value < 12 ? '#f44336' : 'inherit' }}>
-            {value.toFixed(2)}
-          </span>
+          <span style={{ color: value < 12 ? '#f44336' : 'inherit' }}>{value.toFixed(2)}</span>
           <span className={classes.metricUnit}>V</span>
         </>
       );
@@ -658,11 +771,37 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
       <div className={classes.root}>
         {device && (
           <Rnd
+            key={minimized && isMobile ? 'rnd-min' : 'rnd-full'}
             default={{ x: 0, y: 0, width: 'auto', height: 'auto' }}
             enableResizing={false}
             dragHandleClassName="draggable-header"
             style={{ position: 'relative' }}
+            onDrag={handleDrag}
+            onDragStop={handleDragStop}
           >
+            {minimized && isMobile ? (
+              <div 
+                className={`draggable-header ${classes.minimizedButton}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMinimized(false);
+                }}
+                onTouchEnd={(e) => {
+                  if (!isDragging) {
+                    e.stopPropagation();
+                    setMinimized(false);
+                  }
+                }}
+              >
+                {deviceImage ? (
+                  <img src={`/api/media/${device.uniqueId}/${deviceImage}`} alt="" className={classes.minimizedImage} />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: theme.palette.primary.main }}>
+                    <img style={{ width: 32, height: 32 }} src={mapIcons[mapIconKey(device.category)]} alt="" />
+                  </div>
+                )}
+              </div>
+            ) : (
             <Card elevation={8} className={classes.card}>
               <CardMedia
                 className={`draggable-header ${classes.banner}`}
@@ -691,9 +830,23 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
                   )}
                   <IconButton
                     size="small"
+                    onClick={(e) => {
+                      if (isMobile) {
+                        e.stopPropagation();
+                        setMinimized(true);
+                      } else {
+                        onClose();
+                      }
+                    }}
+                    onTouchEnd={(e) => {
+                      e.stopPropagation();
+                      if (isMobile) {
+                        setMinimized(true);
+                      } else {
+                        onClose();
+                      }
+                    }}
                     className={classes.close}
-                    onClick={onClose}
-                    onTouchStart={onClose}
                   >
                     <CloseIcon fontSize="small" />
                   </IconButton>
@@ -707,7 +860,9 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
                     {device.model && <span className={classes.modelSuffix}> · {device.model}</span>}
                   </Typography>
                   {hasEvents && (
-                    <Tooltip title={`${deviceEvents.length} Pending Notification${deviceEvents.length > 1 ? 's' : ''}`}>
+                    <Tooltip
+                      title={`${deviceEvents.length} Pending Notification${deviceEvents.length > 1 ? 's' : ''}`}
+                    >
                       <IconButton
                         size="small"
                         sx={{ padding: 0.5, marginLeft: 0.5 }}
@@ -728,7 +883,17 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
                   )}
                 </div>
                 {position && position.attributes && (
-                  <div style={{ marginTop: '4px', fontSize: '0.85rem', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+                  <div
+                    style={{
+                      marginTop: '4px',
+                      fontSize: '0.85rem',
+                      textAlign: 'center',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '12px',
+                    }}
+                  >
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                       {device.status === 'offline' || device.status === 'unknown' ? (
                         <>
@@ -740,7 +905,9 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
                             )}
                           </span>
                           {device.lastUpdate && (
-                            <span style={{ marginLeft: '4px', color: theme.palette.text.secondary }}>
+                            <span
+                              style={{ marginLeft: '4px', color: theme.palette.text.secondary }}
+                            >
                               {formatTimeAgo(device.lastUpdate)}
                             </span>
                           )}
@@ -748,13 +915,19 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
                       ) : (
                         stateDurationMs != null && (
                           <>
-                            <span style={{ 
-                              color: position.attributes.ignition ? theme.palette.success.main : theme.palette.text.disabled,
-                              fontWeight: 600 
-                            }}>
+                            <span
+                              style={{
+                                color: position.attributes.ignition
+                                  ? theme.palette.success.main
+                                  : theme.palette.text.disabled,
+                                fontWeight: 600,
+                              }}
+                            >
                               {position.attributes.ignition ? 'Driving' : 'Stopped'}
                             </span>
-                            <span style={{ marginLeft: '4px', color: theme.palette.text.secondary }}>
+                            <span
+                              style={{ marginLeft: '4px', color: theme.palette.text.secondary }}
+                            >
                               {formatStateDuration(stateDurationMs)}
                             </span>
                           </>
@@ -762,12 +935,22 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
                       )}
                     </div>
 
-                    {(position.attributes.hasOwnProperty('sat') || position.attributes.hasOwnProperty('rssi')) && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: theme.palette.text.secondary }}>
+                    {(position.attributes.hasOwnProperty('sat') ||
+                      position.attributes.hasOwnProperty('rssi')) && (
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          color: theme.palette.text.secondary,
+                        }}
+                      >
                         {position.attributes.hasOwnProperty('sat') && (
                           <Tooltip title="Satellites">
                             <span style={{ display: 'flex', alignItems: 'center' }}>
-                              {(device.status === 'offline' || device.status === 'unknown') ? 0 : position.attributes.sat}
+                              {device.status === 'offline' || device.status === 'unknown'
+                                ? 0
+                                : position.attributes.sat}
                               <SatelliteAltIcon style={{ width: 16, height: 16, marginLeft: 2 }} />
                             </span>
                           </Tooltip>
@@ -775,8 +958,12 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
                         {position.attributes.hasOwnProperty('rssi') && (
                           <Tooltip title="Signal (RSSI)">
                             <span style={{ display: 'flex', alignItems: 'center' }}>
-                              {(device.status === 'offline' || device.status === 'unknown') ? 0 : position.attributes.rssi}
-                              <SignalCellularAltIcon style={{ width: 16, height: 16, marginLeft: 2 }} />
+                              {device.status === 'offline' || device.status === 'unknown'
+                                ? 0
+                                : position.attributes.rssi}
+                              <SignalCellularAltIcon
+                                style={{ width: 16, height: 16, marginLeft: 2 }}
+                              />
                             </span>
                           </Tooltip>
                         )}
@@ -810,9 +997,7 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
                           </div>
                         );
                       })}
-                      {topMetricKeys.length % 2 !== 0 && (
-                        <div className={classes.metric} />
-                      )}
+                      {topMetricKeys.length % 2 !== 0 && <div className={classes.metric} />}
                     </div>
                   )}
                   {hasAddress && (
@@ -858,7 +1043,9 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
                         let Icon = ROW_ICONS[key] || CircleIcon;
                         let iconColor = 'inherit';
                         if (key === 'power') {
-                          const val = position.hasOwnProperty(key) ? position[key] : position.attributes[key];
+                          const val = position.hasOwnProperty(key)
+                            ? position[key]
+                            : position.attributes[key];
                           if (val == null || val < 12) {
                             Icon = BatteryAlertIcon;
                             iconColor = '#f44336';
@@ -870,15 +1057,11 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
                               <Icon sx={{ fontSize: 13, color: iconColor }} />
                               {labelFor(key)}
                             </div>
-                            <div className={classes.metricValue}>
-                              {renderValue(key)}
-                            </div>
+                            <div className={classes.metricValue}>{renderValue(key)}</div>
                           </div>
                         );
                       })}
-                      {bottomMetricKeys.length % 2 !== 0 && (
-                        <div className={classes.metric} />
-                      )}
+                      {bottomMetricKeys.length % 2 !== 0 && <div className={classes.metric} />}
                     </div>
                   )}
                   {rowKeys.length > 0 && (
@@ -908,7 +1091,6 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
                 </CardContent>
               )}
               <CardActions className={classes.actions} disableSpacing>
-
                 <Tooltip title={t('reportReplay')}>
                   <IconButton
                     className={classes.actionButton}
@@ -930,7 +1112,7 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
                 <Tooltip title={t('sharedEdit')}>
                   <IconButton
                     className={classes.actionButton}
-                    onClick={() => navigate(`/settings/device/${deviceId}`)}
+                    onClick={() => setEditOpen(true)}
                     disabled={disableActions || deviceReadonly}
                   >
                     <EditIcon fontSize="small" />
@@ -949,8 +1131,12 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
                 )}
               </CardActions>
             </Card>
+            )}
           </Rnd>
         )}
+      </div>
+      <div className={`${classes.dropZone} ${isNearTop ? classes.dropZoneActive : ''}`}>
+        <CloseIcon className={classes.dropZoneIcon} />
       </div>
       {position && (
         <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
@@ -1026,11 +1212,7 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
         onClose={() => setAccumulatorsOpen(false)}
         deviceId={deviceId}
       />
-      <ShareDialog
-        open={shareOpen}
-        onClose={() => setShareOpen(false)}
-        deviceId={deviceId}
-      />
+      <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} deviceId={deviceId} />
       <StreetViewDialog
         open={streetViewOpen}
         onClose={() => setStreetViewOpen(false)}
@@ -1039,6 +1221,7 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
         deviceId={deviceId}
         deviceName={device?.name}
       />
+      {editOpen && <DevicePage isDialog id={deviceId} item={device} onClose={() => setEditOpen(false)} />}
     </>
   );
 };
