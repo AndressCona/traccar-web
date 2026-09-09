@@ -314,7 +314,7 @@ const DeviceList = ({
         {[
           ['all', 'All', Object.keys(allDevices).length],
           ['driving', 'Driving', drivingCount],
-          ['stopped', 'Stopped', stoppedCount],
+          ['stopped', 'Parked', stoppedCount],
           ['offline', t('deviceStatusOffline'), deviceStatusCount('offline')],
           ['alarm', t('eventAlarm'), alarmCount],
         ].map(([key, label, count]) => (

@@ -923,7 +923,7 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
                                 fontWeight: 600,
                               }}
                             >
-                              {position.attributes.ignition ? 'Driving' : 'Stopped'}
+                              {position.attributes.ignition ? 'Driving' : 'Parked'}
                             </span>
                             <span
                               style={{ marginLeft: '4px', color: theme.palette.text.secondary }}
