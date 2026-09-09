@@ -17,9 +17,6 @@ import CloseIcon from '@mui/icons-material/Close';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import SpeedIcon from '@mui/icons-material/Speed';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import RoomIcon from '@mui/icons-material/Room';
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import GoogleStreetViewIcon from './GoogleStreetViewIcon';
 import { useTranslation } from './LocalizationProvider';
@@ -32,8 +29,8 @@ import {
   speedUnitString,
 } from '../util/converter';
 
-// Road lane icon matching mockup (/|\)
-const RoadLaneIcon = ({ size = 15, color = '#9ca3af' }) => (
+// Road lane icon matching platform views (/|\)
+const RoadLaneIcon = ({ size = 15, color = 'currentColor' }) => (
   <svg
     width={size}
     height={size}
@@ -53,8 +50,8 @@ const RoadLaneIcon = ({ size = 15, color = '#9ca3af' }) => (
   </svg>
 );
 
-// Horizontal battery icon matching mockup ([=])
-const HorizontalBatteryIcon = ({ size = 16, color = '#9ca3af' }) => (
+// Horizontal battery icon matching platform views ([=])
+const HorizontalBatteryIcon = ({ size = 16, color = 'currentColor' }) => (
   <svg
     width={size}
     height={size}
@@ -66,264 +63,229 @@ const HorizontalBatteryIcon = ({ size = 16, color = '#9ca3af' }) => (
   </svg>
 );
 
-const useStyles = makeStyles()((theme) => ({
-  dialog: {
-    '& .MuiDialog-paper': {
-      borderRadius: 20,
+const useStyles = makeStyles()((theme) => {
+  const isDark = theme.palette.mode === 'dark';
+
+  return {
+    dialog: {
+      '& .MuiDialog-paper': {
+        borderRadius: 20,
+        overflow: 'hidden',
+        backgroundColor: theme.palette.background.paper,
+        color: theme.palette.text.primary,
+        boxShadow: isDark
+          ? '0 24px 48px rgba(0, 0, 0, 0.75)'
+          : '0 16px 36px rgba(0, 0, 0, 0.16)',
+        display: 'flex',
+        flexDirection: 'column',
+        width: '100%',
+        maxWidth: '390px !important',
+        height: '84vh',
+        maxHeight: 740,
+        border: `1px solid ${theme.palette.divider}`,
+      },
+    },
+    dialogMobile: {
+      '& .MuiDialog-paper': {
+        borderRadius: 0,
+        width: '100%',
+        maxWidth: '100% !important',
+        height: '100%',
+        maxHeight: '100%',
+        margin: 0,
+        backgroundColor: theme.palette.background.paper,
+        color: theme.palette.text.primary,
+        display: 'flex',
+        flexDirection: 'column',
+      },
+    },
+    titleBar: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: theme.spacing(1.4, 2),
+      borderBottom: `1px solid ${theme.palette.divider}`,
+      backgroundColor: theme.palette.background.paper,
+      flexShrink: 0,
+    },
+    titleLeft: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: theme.spacing(1.25),
+      minWidth: 0,
+    },
+    carIconBox: {
+      width: 42,
+      height: 42,
+      borderRadius: '50%',
+      backgroundColor: theme.palette.primary.main,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
       overflow: 'hidden',
-      backgroundColor: '#121316',
-      color: '#ffffff',
-      boxShadow: '0 24px 48px rgba(0, 0, 0, 0.75)',
-      display: 'flex',
-      flexDirection: 'column',
-      width: '100%',
-      maxWidth: '390px !important',
-      height: '84vh',
-      maxHeight: 740,
-      border: '1px solid rgba(255, 255, 255, 0.08)',
+      border: `2px solid ${isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)'}`,
+      boxShadow: `0 2px 8px ${isDark ? 'rgba(0, 0, 0, 0.4)' : 'rgba(0, 0, 0, 0.1)'}`,
     },
-  },
-  dialogMobile: {
-    '& .MuiDialog-paper': {
-      borderRadius: 0,
+    carImage: {
       width: '100%',
-      maxWidth: '100% !important',
       height: '100%',
-      maxHeight: '100%',
-      margin: 0,
-      backgroundColor: '#121316',
-      color: '#ffffff',
+      objectFit: 'cover',
+      borderRadius: '50%',
+      display: 'block',
+    },
+    statusBadge: {
+      padding: '3px 10px',
+      borderRadius: 12,
+      fontWeight: 600,
+      fontSize: '0.78rem',
+      lineHeight: 1.2,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    content: {
+      padding: '0 !important',
+      position: 'relative',
+      flex: 1,
+      height: '100%',
+      minHeight: 0,
+      maxHeight: 'none',
+      width: '100%',
       display: 'flex',
       flexDirection: 'column',
+      backgroundColor: '#000000',
+      overflow: 'hidden',
     },
-  },
-  titleBar: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: theme.spacing(1.4, 2),
-    borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-    backgroundColor: '#141518',
-    flexShrink: 0,
-  },
-  titleLeft: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: theme.spacing(1.25),
-    minWidth: 0,
-  },
-  carIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    backgroundColor: '#1565c0',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-    overflow: 'hidden',
-  },
-  carImage: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-    display: 'block',
-  },
-  statusBadge: {
-    padding: '3px 10px',
-    borderRadius: 12,
-    fontWeight: 600,
-    fontSize: '0.78rem',
-    lineHeight: 1.2,
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  content: {
-    padding: '0 !important',
-    position: 'relative',
-    flex: 1,
-    height: '100%',
-    minHeight: 0,
-    maxHeight: 'none',
-    width: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    backgroundColor: '#0a0a0a',
-    overflow: 'hidden',
-  },
-  iframeWrapper: {
-    position: 'relative',
-    width: '100%',
-    flex: 1,
-    minHeight: 0,
-    height: '100%',
-    overflow: 'hidden',
-    backgroundColor: '#000000',
-  },
-  iframe: {
-    width: '100%',
-    height: '100%',
-    border: 0,
-    display: 'block',
-  },
-  overlay: {
-    position: 'absolute',
-    inset: 0,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: theme.spacing(2),
-    padding: theme.spacing(3),
-    textAlign: 'center',
-    backgroundColor: 'rgba(18, 18, 18, 0.94)',
-    zIndex: 2,
-    overflowY: 'auto',
-  },
-  cardBox: {
-    maxWidth: 480,
-    width: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: theme.spacing(2),
-  },
-  emptyIconBox: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: theme.spacing(1),
-  },
-  viewOnMapButton: {
-    position: 'absolute',
-    bottom: 18,
-    left: '50%',
-    transform: 'translateX(-50%)',
-    zIndex: 5,
-    borderRadius: 24,
-    padding: '7px 20px',
-    backgroundColor: 'rgba(24, 26, 30, 0.92)',
-    backdropFilter: 'blur(10px)',
-    border: '1px solid rgba(255, 255, 255, 0.16)',
-    color: '#ffffff',
-    textTransform: 'none',
-    fontWeight: 500,
-    fontSize: '0.82rem',
-    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.55)',
-    whiteSpace: 'nowrap',
-    '&:hover': {
-      backgroundColor: 'rgba(38, 41, 47, 0.98)',
-      borderColor: 'rgba(255, 255, 255, 0.3)',
+    iframeWrapper: {
+      position: 'relative',
+      width: '100%',
+      flex: 1,
+      minHeight: 0,
+      height: '100%',
+      overflow: 'hidden',
+      backgroundColor: '#000000',
     },
-  },
-  metricsContainer: {
-    flexShrink: 0,
-    backgroundColor: '#141518',
-    borderTop: '1px solid rgba(255, 255, 255, 0.06)',
-    padding: theme.spacing(1.2, 1.4, 1.2),
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: theme.spacing(1),
-    zIndex: 4,
-  },
-  metricsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(2, 1fr)',
-    gap: theme.spacing(1),
-    width: '100%',
-  },
-  metricCard: {
-    backgroundColor: '#191b1f',
-    borderRadius: 12,
-    border: '1px solid rgba(255, 255, 255, 0.06)',
-    padding: theme.spacing(1.1, 1.2),
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    textAlign: 'center',
-    minWidth: 0,
-  },
-  metricHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    fontSize: '0.78rem',
-    color: '#9ca3af',
-    fontWeight: 500,
-    marginBottom: 4,
-  },
-  metricValueRow: {
-    display: 'flex',
-    alignItems: 'baseline',
-    justifyContent: 'center',
-    gap: 5,
-    minWidth: 0,
-    width: '100%',
-  },
-  metricValue: {
-    fontWeight: 700,
-    fontSize: '1.45rem',
-    lineHeight: 1.15,
-    color: '#ffffff',
-    whiteSpace: 'nowrap',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-  },
-  metricUnit: {
-    fontSize: '0.8rem',
-    fontWeight: 500,
-    color: '#9ca3af',
-  },
-  collapseButton: {
-    width: 30,
-    height: 30,
-    borderRadius: '50%',
-    backgroundColor: '#1f2126',
-    border: '1px solid rgba(255, 255, 255, 0.12)',
-    color: 'rgba(255, 255, 255, 0.85)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    padding: 0,
-    transition: 'all 0.15s ease',
-    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.3)',
-    '&:hover': {
-      backgroundColor: '#282b32',
+    iframe: {
+      width: '100%',
+      height: '100%',
+      border: 0,
+      display: 'block',
+    },
+    overlay: {
+      position: 'absolute',
+      inset: 0,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: theme.spacing(2),
+      padding: theme.spacing(3),
+      textAlign: 'center',
+      backgroundColor: isDark ? 'rgba(18, 18, 18, 0.94)' : 'rgba(255, 255, 255, 0.94)',
+      color: theme.palette.text.primary,
+      zIndex: 2,
+      overflowY: 'auto',
+    },
+    cardBox: {
+      maxWidth: 480,
+      width: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: theme.spacing(2),
+    },
+    emptyIconBox: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: theme.spacing(1),
+    },
+    viewOnMapButton: {
+      position: 'absolute',
+      bottom: 18,
+      left: '50%',
+      transform: 'translateX(-50%)',
+      zIndex: 5,
+      borderRadius: 24,
+      padding: '7px 20px',
+      backgroundColor: 'rgba(24, 26, 30, 0.92)',
+      backdropFilter: 'blur(10px)',
+      border: '1px solid rgba(255, 255, 255, 0.2)',
       color: '#ffffff',
-      borderColor: 'rgba(255, 255, 255, 0.25)',
+      textTransform: 'none',
+      fontWeight: 500,
+      fontSize: '0.82rem',
+      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.55)',
+      whiteSpace: 'nowrap',
+      transition: 'all 0.2s ease',
+      '&:hover': {
+        backgroundColor: theme.palette.primary.main,
+        borderColor: theme.palette.primary.main,
+        color: '#ffffff',
+      },
     },
-  },
-  floatingUpButton: {
-    position: 'absolute',
-    bottom: theme.spacing(2),
-    left: '50%',
-    transform: 'translateX(-50%)',
-    zIndex: 6,
-    width: 32,
-    height: 32,
-    borderRadius: '50%',
-    backgroundColor: '#1f2126',
-    backdropFilter: 'blur(8px)',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
-    color: '#ffffff',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.45)',
-    padding: 0,
-    transition: 'all 0.15s ease',
-    '&:hover': {
-      backgroundColor: '#282b32',
-      borderColor: 'rgba(255, 255, 255, 0.35)',
+    metricsContainer: {
+      flexShrink: 0,
+      backgroundColor: isDark ? '#141518' : theme.palette.background.paper,
+      borderTop: `1px solid ${theme.palette.divider}`,
+      padding: theme.spacing(1.4, 1.4, 1.6),
+      display: 'flex',
+      flexDirection: 'column',
+      zIndex: 4,
     },
-  },
-}));
+    metricsGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(2, 1fr)',
+      gap: theme.spacing(1),
+      width: '100%',
+    },
+    metricCard: {
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : theme.palette.grey[100],
+      borderRadius: 12,
+      border: `1px solid ${theme.palette.divider}`,
+      padding: theme.spacing(1.1, 1.2),
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      textAlign: 'center',
+      minWidth: 0,
+    },
+    metricHeader: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      fontSize: '0.78rem',
+      color: theme.palette.text.secondary,
+      fontWeight: 500,
+      marginBottom: 4,
+    },
+    metricValueRow: {
+      display: 'flex',
+      alignItems: 'baseline',
+      justifyContent: 'center',
+      gap: 5,
+      minWidth: 0,
+      width: '100%',
+    },
+    metricValue: {
+      fontWeight: 700,
+      fontSize: '1.45rem',
+      lineHeight: 1.15,
+      color: theme.palette.text.primary,
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+    },
+    metricUnit: {
+      fontSize: '0.8rem',
+      fontWeight: 500,
+      color: theme.palette.text.secondary,
+    },
+  };
+});
 
 const parseTimeAgo = (date) => {
   if (!date) return { num: '--', unit: '' };
@@ -346,7 +308,6 @@ const StreetViewDialog = ({ open, onClose, position, device, deviceName }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const [showDetails, setShowDetails] = useState(true);
   const [iframeLoading, setIframeLoading] = useState(true);
 
   const traccarGoogleKey = useAttributePreference('googleKey');
@@ -363,7 +324,6 @@ const StreetViewDialog = ({ open, onClose, position, device, deviceName }) => {
   useEffect(() => {
     if (open) {
       setIframeLoading(true);
-      setShowDetails(true);
     }
   }, [open, position?.latitude, position?.longitude]);
 
@@ -423,14 +383,22 @@ const StreetViewDialog = ({ open, onClose, position, device, deviceName }) => {
                 className={classes.carImage}
               />
             ) : (
-              <DirectionsCarIcon sx={{ fontSize: 22, color: '#ffffff' }} />
+              <DirectionsCarIcon sx={{ fontSize: 24, color: '#ffffff' }} />
             )}
           </div>
           <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0.2 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: '0.98rem', lineHeight: 1.2, color: '#ffffff' }} noWrap>
+            <Typography
+              variant="subtitle1"
+              sx={{ fontWeight: 700, fontSize: '0.98rem', lineHeight: 1.2, color: theme.palette.text.primary }}
+              noWrap
+            >
               {displayName}
             </Typography>
-            <Typography variant="caption" sx={{ color: '#9ca3af', fontSize: '0.75rem', lineHeight: 1 }} noWrap>
+            <Typography
+              variant="caption"
+              sx={{ color: theme.palette.text.secondary, fontSize: '0.75rem', lineHeight: 1 }}
+              noWrap
+            >
               {subtitleText}
             </Typography>
           </Box>
@@ -447,7 +415,15 @@ const StreetViewDialog = ({ open, onClose, position, device, deviceName }) => {
           >
             {isOnline ? 'Online' : 'Offline'}
           </div>
-          <IconButton onClick={onClose} size="small" sx={{ color: '#9ca3af', p: 0.5, '&:hover': { color: '#ffffff' } }}>
+          <IconButton
+            onClick={onClose}
+            size="small"
+            sx={{
+              color: theme.palette.text.secondary,
+              p: 0.5,
+              '&:hover': { color: theme.palette.text.primary },
+            }}
+          >
             <CloseIcon fontSize="small" />
           </IconButton>
         </Box>
@@ -469,106 +445,91 @@ const StreetViewDialog = ({ open, onClose, position, device, deviceName }) => {
               />
               {iframeLoading && (
                 <div className={classes.overlay}>
-                  <CircularProgress size={40} sx={{ color: '#1a73e8' }} />
-                  <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                  <CircularProgress size={40} sx={{ color: theme.palette.primary.main }} />
+                  <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
                     Loading Street View...
                   </Typography>
                 </div>
               )}
 
-              {/* Floating "View on Google Maps" button */}
+              {/* Floating "View on Google Maps" button with exit icon at the end */}
               <Button
                 component="a"
                 href={directStreetViewUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                startIcon={<RoomIcon sx={{ fontSize: 16, color: '#ffffff' }} />}
+                endIcon={<OpenInNewIcon sx={{ fontSize: 16 }} />}
                 className={classes.viewOnMapButton}
               >
                 View on Google Maps
               </Button>
-
-              {/* Floating button when vehicle info is collapsed */}
-              {!showDetails && (
-                <button
-                  type="button"
-                  className={classes.floatingUpButton}
-                  onClick={() => setShowDetails(true)}
-                  title="Show Vehicle Details"
-                >
-                  <ArrowUpwardIcon sx={{ fontSize: 16 }} />
-                </button>
-              )}
             </div>
 
-            {/* Bottom 2x2 Metrics Section */}
-            {showDetails && (
-              <div className={classes.metricsContainer}>
-                <div className={classes.metricsGrid}>
-                  {/* Speed */}
-                  <div className={classes.metricCard}>
-                    <div className={classes.metricHeader}>
-                      <SpeedIcon sx={{ fontSize: 15, color: '#9ca3af' }} />
-                      <span>Speed</span>
-                    </div>
-                    <div className={classes.metricValueRow}>
-                      <span className={classes.metricValue}>{speedValue != null ? speedValue : 0}</span>
-                      <span className={classes.metricUnit}>{speedUnitLabel}</span>
-                    </div>
+            {/* Fixed Bottom 2x2 Metrics Section */}
+            <div className={classes.metricsContainer}>
+              <div className={classes.metricsGrid}>
+                {/* Speed */}
+                <div className={classes.metricCard}>
+                  <div className={classes.metricHeader}>
+                    <SpeedIcon sx={{ fontSize: 15, color: theme.palette.text.secondary }} />
+                    <span>Speed</span>
                   </div>
-
-                  {/* Odometer */}
-                  <div className={classes.metricCard}>
-                    <div className={classes.metricHeader}>
-                      <RoadLaneIcon size={15} color="#9ca3af" />
-                      <span>Odometer</span>
-                    </div>
-                    <div className={classes.metricValueRow}>
-                      <span className={classes.metricValue} style={{ fontSize: distanceValue && distanceValue.length > 7 ? '1.25rem' : '1.45rem' }}>
-                        {distanceValue != null ? distanceValue : '--'}
-                      </span>
-                      <span className={classes.metricUnit}>{distanceUnitLabel}</span>
-                    </div>
-                  </div>
-
-                  {/* Power */}
-                  <div className={classes.metricCard}>
-                    <div className={classes.metricHeader}>
-                      <HorizontalBatteryIcon size={16} color={isLowPower ? '#ef4444' : '#9ca3af'} />
-                      <span>Power</span>
-                    </div>
-                    <div className={classes.metricValueRow}>
-                      <span className={classes.metricValue} style={{ color: isLowPower ? '#ef4444' : '#ffffff' }}>
-                        {displayPowerNum}
-                      </span>
-                      {displayPowerUnit && <span className={classes.metricUnit}>{displayPowerUnit}</span>}
-                    </div>
-                  </div>
-
-                  {/* Last report */}
-                  <div className={classes.metricCard}>
-                    <div className={classes.metricHeader}>
-                      <AccessTimeIcon sx={{ fontSize: 15, color: '#9ca3af' }} />
-                      <span>Last report</span>
-                    </div>
-                    <div className={classes.metricValueRow}>
-                      <span className={classes.metricValue}>{timeAgoObj.num}</span>
-                      <span className={classes.metricUnit}>{timeAgoObj.unit}</span>
-                    </div>
+                  <div className={classes.metricValueRow}>
+                    <span className={classes.metricValue}>{speedValue != null ? speedValue : 0}</span>
+                    <span className={classes.metricUnit}>{speedUnitLabel}</span>
                   </div>
                 </div>
 
-                {/* Circular collapse button (↓) */}
-                <button
-                  type="button"
-                  className={classes.collapseButton}
-                  onClick={() => setShowDetails(false)}
-                  title="Hide Vehicle Details"
-                >
-                  <ArrowDownwardIcon sx={{ fontSize: 16 }} />
-                </button>
+                {/* Odometer */}
+                <div className={classes.metricCard}>
+                  <div className={classes.metricHeader}>
+                    <RoadLaneIcon size={15} color={theme.palette.text.secondary} />
+                    <span>Odometer</span>
+                  </div>
+                  <div className={classes.metricValueRow}>
+                    <span
+                      className={classes.metricValue}
+                      style={{ fontSize: distanceValue && distanceValue.length > 7 ? '1.25rem' : '1.45rem' }}
+                    >
+                      {distanceValue != null ? distanceValue : '--'}
+                    </span>
+                    <span className={classes.metricUnit}>{distanceUnitLabel}</span>
+                  </div>
+                </div>
+
+                {/* Power */}
+                <div className={classes.metricCard}>
+                  <div className={classes.metricHeader}>
+                    <HorizontalBatteryIcon
+                      size={16}
+                      color={isLowPower ? theme.palette.error.main : theme.palette.text.secondary}
+                    />
+                    <span>Power</span>
+                  </div>
+                  <div className={classes.metricValueRow}>
+                    <span
+                      className={classes.metricValue}
+                      style={{ color: isLowPower ? theme.palette.error.main : theme.palette.text.primary }}
+                    >
+                      {displayPowerNum}
+                    </span>
+                    {displayPowerUnit && <span className={classes.metricUnit}>{displayPowerUnit}</span>}
+                  </div>
+                </div>
+
+                {/* Last report */}
+                <div className={classes.metricCard}>
+                  <div className={classes.metricHeader}>
+                    <AccessTimeIcon sx={{ fontSize: 15, color: theme.palette.text.secondary }} />
+                    <span>Last report</span>
+                  </div>
+                  <div className={classes.metricValueRow}>
+                    <span className={classes.metricValue}>{timeAgoObj.num}</span>
+                    <span className={classes.metricUnit}>{timeAgoObj.unit}</span>
+                  </div>
+                </div>
               </div>
-            )}
+            </div>
           </>
         ) : (
           <div className={classes.overlay}>
@@ -577,11 +538,11 @@ const StreetViewDialog = ({ open, onClose, position, device, deviceName }) => {
                 <GoogleStreetViewIcon size={56} />
               </div>
 
-              <Typography variant="h6" sx={{ fontWeight: 700, color: '#ffffff' }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: theme.palette.text.primary }}>
                 Street View
               </Typography>
 
-              <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', lineHeight: 1.5 }}>
+              <Typography variant="body2" sx={{ color: theme.palette.text.secondary, lineHeight: 1.5 }}>
                 Open this location directly in Google Maps.
               </Typography>
 
@@ -589,7 +550,7 @@ const StreetViewDialog = ({ open, onClose, position, device, deviceName }) => {
                 <Button
                   variant="contained"
                   size="large"
-                  startIcon={<OpenInNewIcon />}
+                  endIcon={<OpenInNewIcon />}
                   href={directStreetViewUrl}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -598,9 +559,10 @@ const StreetViewDialog = ({ open, onClose, position, device, deviceName }) => {
                     borderRadius: 2,
                     fontWeight: 600,
                     py: 1.2,
-                    backgroundColor: '#1a73e8',
+                    backgroundColor: theme.palette.primary.main,
+                    color: '#ffffff',
                     '&:hover': {
-                      backgroundColor: '#1557b0',
+                      backgroundColor: theme.palette.primary.dark || theme.palette.primary.main,
                     },
                   }}
                 >
