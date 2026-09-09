@@ -9,6 +9,7 @@ import {
   Button,
   CircularProgress,
   Box,
+  Tooltip,
   useTheme,
   useMediaQuery,
 } from '@mui/material';
@@ -18,6 +19,7 @@ import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import SpeedIcon from '@mui/icons-material/Speed';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import GoogleStreetViewIcon from './GoogleStreetViewIcon';
 import { useTranslation } from './LocalizationProvider';
 import { useAttributePreference } from '../util/preferences';
@@ -75,13 +77,13 @@ const useStyles = makeStyles()((theme) => {
         color: theme.palette.text.primary,
         boxShadow: isDark
           ? '0 24px 48px rgba(0, 0, 0, 0.75)'
-          : '0 16px 36px rgba(0, 0, 0, 0.16)',
+          : '0 16px 36px rgba(0, 0, 0, 0.18)',
         display: 'flex',
         flexDirection: 'column',
-        width: '100%',
-        maxWidth: '390px !important',
-        height: '84vh',
-        maxHeight: 740,
+        width: '92%',
+        maxWidth: '960px !important',
+        height: '76vh',
+        maxHeight: 720,
         border: `1px solid ${theme.palette.divider}`,
       },
     },
@@ -103,7 +105,7 @@ const useStyles = makeStyles()((theme) => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: theme.spacing(1.4, 2),
+      padding: theme.spacing(1.2, 2),
       borderBottom: `1px solid ${theme.palette.divider}`,
       backgroundColor: theme.palette.background.paper,
       flexShrink: 0,
@@ -115,8 +117,8 @@ const useStyles = makeStyles()((theme) => {
       minWidth: 0,
     },
     carIconBox: {
-      width: 42,
-      height: 42,
+      width: 40,
+      height: 40,
       borderRadius: '50%',
       backgroundColor: theme.palette.primary.main,
       display: 'flex',
@@ -225,11 +227,34 @@ const useStyles = makeStyles()((theme) => {
         color: '#ffffff',
       },
     },
+    floatingRefreshButton: {
+      position: 'absolute',
+      top: 16,
+      left: '50%',
+      transform: 'translateX(-50%)',
+      zIndex: 5,
+      borderRadius: 20,
+      padding: '6px 16px',
+      backgroundColor: 'rgba(20, 22, 26, 0.92)',
+      backdropFilter: 'blur(10px)',
+      border: `1px solid ${theme.palette.primary.main}`,
+      color: '#ffffff',
+      textTransform: 'none',
+      fontSize: '0.8rem',
+      fontWeight: 600,
+      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.6)',
+      whiteSpace: 'nowrap',
+      transition: 'all 0.2s ease',
+      '&:hover': {
+        backgroundColor: theme.palette.primary.main,
+        color: '#ffffff',
+      },
+    },
     metricsContainer: {
       flexShrink: 0,
       backgroundColor: isDark ? '#141518' : theme.palette.background.paper,
       borderTop: `1px solid ${theme.palette.divider}`,
-      padding: theme.spacing(1.4, 1.4, 1.6),
+      padding: theme.spacing(1.2, 1.4, 1.4),
       display: 'flex',
       flexDirection: 'column',
       zIndex: 4,
@@ -310,22 +335,65 @@ const StreetViewDialog = ({ open, onClose, position, device, deviceName }) => {
 
   const [iframeLoading, setIframeLoading] = useState(true);
 
+  // Freeze the location where the user opened Street View so motion doesn't cause black screen reloads
+  const [frozenPosition, setFrozenPosition] = useState(null);
+
+  useEffect(() => {
+    if (open && position) {
+      setFrozenPosition({
+        latitude: position.latitude,
+        longitude: position.longitude,
+        course: position.course,
+      });
+      setIframeLoading(true);
+    } else if (!open) {
+      setFrozenPosition(null);
+    }
+  }, [open]);
+
+  // If dialog opened before position was available
+  useEffect(() => {
+    if (open && position && !frozenPosition) {
+      setFrozenPosition({
+        latitude: position.latitude,
+        longitude: position.longitude,
+        course: position.course,
+      });
+      setIframeLoading(true);
+    }
+  }, [open, position, frozenPosition]);
+
+  const targetPosition = frozenPosition || position;
+
   const traccarGoogleKey = useAttributePreference('googleKey');
   const activeKey = traccarGoogleKey || DEFAULT_GOOGLE_KEY;
 
-  const directStreetViewUrl = position
-    ? `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${position.latitude}%2C${position.longitude}&heading=${position.course || 0}`
+  const directStreetViewUrl = targetPosition
+    ? `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${targetPosition.latitude}%2C${targetPosition.longitude}&heading=${targetPosition.course || 0}`
     : '#';
 
-  const embedUrl = position && activeKey
-    ? `https://www.google.com/maps/embed/v1/streetview?key=${encodeURIComponent(activeKey)}&location=${position.latitude}%2C${position.longitude}&heading=${position.course || 0}&pitch=0&fov=90`
+  const embedUrl = targetPosition && activeKey
+    ? `https://www.google.com/maps/embed/v1/streetview?key=${encodeURIComponent(activeKey)}&location=${targetPosition.latitude}%2C${targetPosition.longitude}&heading=${targetPosition.course || 0}&pitch=0&fov=90`
     : null;
 
-  useEffect(() => {
-    if (open) {
+  // Check if vehicle has moved away from the frozen viewpoint (approx 15-20 meters)
+  const hasMoved = Boolean(
+    frozenPosition &&
+    position &&
+    (Math.abs(frozenPosition.latitude - position.latitude) > 0.00015 ||
+     Math.abs(frozenPosition.longitude - position.longitude) > 0.00015)
+  );
+
+  const handleRefreshLocation = () => {
+    if (position) {
       setIframeLoading(true);
+      setFrozenPosition({
+        latitude: position.latitude,
+        longitude: position.longitude,
+        course: position.course,
+      });
     }
-  }, [open, position?.latitude, position?.longitude]);
+  };
 
   // Calculations matching StatusCard
   const speedUnit = useAttributePreference('speedUnit');
@@ -368,9 +436,16 @@ const StreetViewDialog = ({ open, onClose, position, device, deviceName }) => {
       open={open}
       onClose={onClose}
       fullScreen={isMobile}
-      maxWidth="xs"
+      maxWidth="md"
       fullWidth
       className={isMobile ? classes.dialogMobile : classes.dialog}
+      slotProps={{
+        backdrop: {
+          sx: {
+            backgroundColor: isMobile ? 'rgba(0, 0, 0, 0.5)' : 'transparent',
+          },
+        },
+      }}
     >
       {/* Header Bar */}
       <DialogTitle className={classes.titleBar} component="div">
@@ -405,6 +480,36 @@ const StreetViewDialog = ({ open, onClose, position, device, deviceName }) => {
         </div>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* Refresh Location Button (Visible if moved or as manual refresh) */}
+          <Tooltip title={hasMoved ? 'Vehicle moved · Click to update Street View' : 'Refresh location'}>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={handleRefreshLocation}
+              startIcon={<RefreshIcon sx={{ fontSize: 16 }} />}
+              sx={{
+                textTransform: 'none',
+                borderRadius: 20,
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                py: 0.3,
+                px: 1.2,
+                borderColor: hasMoved ? theme.palette.primary.main : theme.palette.divider,
+                color: hasMoved ? theme.palette.primary.main : theme.palette.text.secondary,
+                backgroundColor: hasMoved
+                  ? (theme.palette.mode === 'dark' ? 'rgba(255, 102, 0, 0.12)' : 'rgba(255, 102, 0, 0.08)')
+                  : 'transparent',
+                '&:hover': {
+                  backgroundColor: theme.palette.primary.main,
+                  color: '#ffffff',
+                  borderColor: theme.palette.primary.main,
+                },
+              }}
+            >
+              {hasMoved ? 'Update View' : 'Refresh'}
+            </Button>
+          </Tooltip>
+
           <div
             className={classes.statusBadge}
             style={{
@@ -452,6 +557,18 @@ const StreetViewDialog = ({ open, onClose, position, device, deviceName }) => {
                 </div>
               )}
 
+              {/* Floating "Vehicle moved · Refresh view" prompt banner */}
+              {hasMoved && (
+                <Button
+                  size="small"
+                  startIcon={<RefreshIcon sx={{ fontSize: 16 }} />}
+                  onClick={handleRefreshLocation}
+                  className={classes.floatingRefreshButton}
+                >
+                  Vehicle moved · Update Street View
+                </Button>
+              )}
+
               {/* Floating "View on Google Maps" button with exit icon at the end */}
               <Button
                 component="a"
@@ -465,71 +582,73 @@ const StreetViewDialog = ({ open, onClose, position, device, deviceName }) => {
               </Button>
             </div>
 
-            {/* Fixed Bottom 2x2 Metrics Section */}
-            <div className={classes.metricsContainer}>
-              <div className={classes.metricsGrid}>
-                {/* Speed */}
-                <div className={classes.metricCard}>
-                  <div className={classes.metricHeader}>
-                    <SpeedIcon sx={{ fontSize: 15, color: theme.palette.text.secondary }} />
-                    <span>Speed</span>
+            {/* Bottom 2x2 Metrics Section - Displayed ONLY on Mobile (on Desktop, StatusCard is already visible beside it) */}
+            {isMobile && (
+              <div className={classes.metricsContainer}>
+                <div className={classes.metricsGrid}>
+                  {/* Speed */}
+                  <div className={classes.metricCard}>
+                    <div className={classes.metricHeader}>
+                      <SpeedIcon sx={{ fontSize: 15, color: theme.palette.text.secondary }} />
+                      <span>Speed</span>
+                    </div>
+                    <div className={classes.metricValueRow}>
+                      <span className={classes.metricValue}>{speedValue != null ? speedValue : 0}</span>
+                      <span className={classes.metricUnit}>{speedUnitLabel}</span>
+                    </div>
                   </div>
-                  <div className={classes.metricValueRow}>
-                    <span className={classes.metricValue}>{speedValue != null ? speedValue : 0}</span>
-                    <span className={classes.metricUnit}>{speedUnitLabel}</span>
-                  </div>
-                </div>
 
-                {/* Odometer */}
-                <div className={classes.metricCard}>
-                  <div className={classes.metricHeader}>
-                    <RoadLaneIcon size={15} color={theme.palette.text.secondary} />
-                    <span>Odometer</span>
+                  {/* Odometer */}
+                  <div className={classes.metricCard}>
+                    <div className={classes.metricHeader}>
+                      <RoadLaneIcon size={15} color={theme.palette.text.secondary} />
+                      <span>Odometer</span>
+                    </div>
+                    <div className={classes.metricValueRow}>
+                      <span
+                        className={classes.metricValue}
+                        style={{ fontSize: distanceValue && distanceValue.length > 7 ? '1.25rem' : '1.45rem' }}
+                      >
+                        {distanceValue != null ? distanceValue : '--'}
+                      </span>
+                      <span className={classes.metricUnit}>{distanceUnitLabel}</span>
+                    </div>
                   </div>
-                  <div className={classes.metricValueRow}>
-                    <span
-                      className={classes.metricValue}
-                      style={{ fontSize: distanceValue && distanceValue.length > 7 ? '1.25rem' : '1.45rem' }}
-                    >
-                      {distanceValue != null ? distanceValue : '--'}
-                    </span>
-                    <span className={classes.metricUnit}>{distanceUnitLabel}</span>
-                  </div>
-                </div>
 
-                {/* Power */}
-                <div className={classes.metricCard}>
-                  <div className={classes.metricHeader}>
-                    <HorizontalBatteryIcon
-                      size={16}
-                      color={isLowPower ? theme.palette.error.main : theme.palette.text.secondary}
-                    />
-                    <span>Power</span>
+                  {/* Power */}
+                  <div className={classes.metricCard}>
+                    <div className={classes.metricHeader}>
+                      <HorizontalBatteryIcon
+                        size={16}
+                        color={isLowPower ? theme.palette.error.main : theme.palette.text.secondary}
+                      />
+                      <span>Power</span>
+                    </div>
+                    <div className={classes.metricValueRow}>
+                      <span
+                        className={classes.metricValue}
+                        style={{ color: isLowPower ? theme.palette.error.main : theme.palette.text.primary }}
+                      >
+                        {displayPowerNum}
+                      </span>
+                      {displayPowerUnit && <span className={classes.metricUnit}>{displayPowerUnit}</span>}
+                    </div>
                   </div>
-                  <div className={classes.metricValueRow}>
-                    <span
-                      className={classes.metricValue}
-                      style={{ color: isLowPower ? theme.palette.error.main : theme.palette.text.primary }}
-                    >
-                      {displayPowerNum}
-                    </span>
-                    {displayPowerUnit && <span className={classes.metricUnit}>{displayPowerUnit}</span>}
-                  </div>
-                </div>
 
-                {/* Last report */}
-                <div className={classes.metricCard}>
-                  <div className={classes.metricHeader}>
-                    <AccessTimeIcon sx={{ fontSize: 15, color: theme.palette.text.secondary }} />
-                    <span>Last report</span>
-                  </div>
-                  <div className={classes.metricValueRow}>
-                    <span className={classes.metricValue}>{timeAgoObj.num}</span>
-                    <span className={classes.metricUnit}>{timeAgoObj.unit}</span>
+                  {/* Last report */}
+                  <div className={classes.metricCard}>
+                    <div className={classes.metricHeader}>
+                      <AccessTimeIcon sx={{ fontSize: 15, color: theme.palette.text.secondary }} />
+                      <span>Last report</span>
+                    </div>
+                    <div className={classes.metricValueRow}>
+                      <span className={classes.metricValue}>{timeAgoObj.num}</span>
+                      <span className={classes.metricUnit}>{timeAgoObj.unit}</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </>
         ) : (
           <div className={classes.overlay}>
