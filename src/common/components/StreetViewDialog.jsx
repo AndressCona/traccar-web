@@ -16,12 +16,10 @@ import { makeStyles } from 'tss-react/mui';
 import CloseIcon from '@mui/icons-material/Close';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import SpeedIcon from '@mui/icons-material/Speed';
-import RouteIcon from '@mui/icons-material/Route';
-import BatteryFullIcon from '@mui/icons-material/BatteryFull';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import RoomIcon from '@mui/icons-material/Room';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import GoogleStreetViewIcon from './GoogleStreetViewIcon';
 import { useTranslation } from './LocalizationProvider';
@@ -34,34 +32,78 @@ import {
   speedUnitString,
 } from '../util/converter';
 
+// Road lane icon matching mockup (/|\)
+const RoadLaneIcon = ({ size = 15, color = '#9ca3af' }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}
+  >
+    <path d="M4 19L8 5" />
+    <path d="M20 19L16 5" />
+    <line x1="12" y1="5" x2="12" y2="7" />
+    <line x1="12" y1="11" x2="12" y2="13" />
+    <line x1="12" y1="17" x2="12" y2="19" />
+  </svg>
+);
+
+// Horizontal battery icon matching mockup ([=])
+const HorizontalBatteryIcon = ({ size = 16, color = '#9ca3af' }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill={color}
+    style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}
+  >
+    <path d="M16 7H4c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-1h2c.55 0 1-.45 1-1v-2c0-.55-.45-1-1-1h-2V9c0-1.1-.9-2-2-2zm0 8H4V9h12v6zm-7-5H6v4h3v-4zm4 0h-3v4h3v-4z" />
+  </svg>
+);
+
 const useStyles = makeStyles()((theme) => ({
-  paper: {
-    borderRadius: theme.spacing(2.5),
-    overflow: 'hidden',
-    backgroundColor: '#121212',
-    color: '#ffffff',
-    boxShadow: theme.shadows[12],
-    display: 'flex',
-    flexDirection: 'column',
-    height: '80vh',
-    maxHeight: 760,
+  dialog: {
+    '& .MuiDialog-paper': {
+      borderRadius: 20,
+      overflow: 'hidden',
+      backgroundColor: '#121316',
+      color: '#ffffff',
+      boxShadow: '0 24px 48px rgba(0, 0, 0, 0.75)',
+      display: 'flex',
+      flexDirection: 'column',
+      width: '100%',
+      maxWidth: '390px !important',
+      height: '84vh',
+      maxHeight: 740,
+      border: '1px solid rgba(255, 255, 255, 0.08)',
+    },
   },
-  paperMobile: {
-    borderRadius: 0,
-    height: '100%',
-    maxHeight: '100%',
-    backgroundColor: '#121212',
-    color: '#ffffff',
-    display: 'flex',
-    flexDirection: 'column',
+  dialogMobile: {
+    '& .MuiDialog-paper': {
+      borderRadius: 0,
+      width: '100%',
+      maxWidth: '100% !important',
+      height: '100%',
+      maxHeight: '100%',
+      margin: 0,
+      backgroundColor: '#121316',
+      color: '#ffffff',
+      display: 'flex',
+      flexDirection: 'column',
+    },
   },
   titleBar: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: theme.spacing(1.2, 2),
-    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-    backgroundColor: '#141414',
+    padding: theme.spacing(1.4, 2),
+    borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+    backgroundColor: '#141518',
     flexShrink: 0,
   },
   titleLeft: {
@@ -73,8 +115,8 @@ const useStyles = makeStyles()((theme) => ({
   carIconBox: {
     width: 38,
     height: 38,
-    borderRadius: theme.spacing(1.25),
-    backgroundColor: 'rgba(26, 115, 232, 0.2)',
+    borderRadius: 10,
+    backgroundColor: '#1565c0',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -88,11 +130,11 @@ const useStyles = makeStyles()((theme) => ({
     display: 'block',
   },
   statusBadge: {
-    padding: '4px 12px',
-    borderRadius: 16,
+    padding: '3px 10px',
+    borderRadius: 12,
     fontWeight: 600,
     fontSize: '0.78rem',
-    lineHeight: 1,
+    lineHeight: 1.2,
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -117,7 +159,7 @@ const useStyles = makeStyles()((theme) => ({
     minHeight: 0,
     height: '100%',
     overflow: 'hidden',
-    backgroundColor: '#000',
+    backgroundColor: '#000000',
   },
   iframe: {
     width: '100%',
@@ -155,70 +197,76 @@ const useStyles = makeStyles()((theme) => ({
   },
   viewOnMapButton: {
     position: 'absolute',
-    bottom: 16,
+    bottom: 18,
     left: '50%',
     transform: 'translateX(-50%)',
     zIndex: 5,
-    borderRadius: 20,
-    padding: '6px 18px',
-    backgroundColor: 'rgba(20, 20, 20, 0.82)',
-    backdropFilter: 'blur(8px)',
-    border: '1px solid rgba(255, 255, 255, 0.18)',
+    borderRadius: 24,
+    padding: '7px 20px',
+    backgroundColor: 'rgba(24, 26, 30, 0.92)',
+    backdropFilter: 'blur(10px)',
+    border: '1px solid rgba(255, 255, 255, 0.16)',
     color: '#ffffff',
     textTransform: 'none',
     fontWeight: 500,
     fontSize: '0.82rem',
-    boxShadow: '0 4px 14px rgba(0, 0, 0, 0.45)',
+    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.55)',
+    whiteSpace: 'nowrap',
     '&:hover': {
-      backgroundColor: 'rgba(35, 35, 35, 0.95)',
-      borderColor: 'rgba(255, 255, 255, 0.35)',
+      backgroundColor: 'rgba(38, 41, 47, 0.98)',
+      borderColor: 'rgba(255, 255, 255, 0.3)',
     },
   },
   metricsContainer: {
     flexShrink: 0,
-    backgroundColor: '#141414',
-    borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-    padding: theme.spacing(1.2, 1.5, 1.2),
+    backgroundColor: '#141518',
+    borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+    padding: theme.spacing(1.2, 1.4, 1.2),
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: theme.spacing(0.75),
+    gap: theme.spacing(1),
     zIndex: 4,
   },
   metricsGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(2, 1fr)',
-    gap: theme.spacing(0.75),
+    gap: theme.spacing(1),
     width: '100%',
   },
   metricCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    borderRadius: theme.spacing(1.25),
+    backgroundColor: '#191b1f',
+    borderRadius: 12,
     border: '1px solid rgba(255, 255, 255, 0.06)',
-    padding: theme.spacing(1, 1.4),
+    padding: theme.spacing(1.1, 1.2),
     display: 'flex',
     flexDirection: 'column',
+    alignItems: 'center',
     justifyContent: 'center',
+    textAlign: 'center',
     minWidth: 0,
   },
   metricHeader: {
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
-    fontSize: '0.72rem',
-    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: '0.78rem',
+    color: '#9ca3af',
     fontWeight: 500,
     marginBottom: 4,
   },
   metricValueRow: {
     display: 'flex',
     alignItems: 'baseline',
-    gap: 4,
+    justifyContent: 'center',
+    gap: 5,
     minWidth: 0,
+    width: '100%',
   },
   metricValue: {
     fontWeight: 700,
-    fontSize: '1.25rem',
+    fontSize: '1.45rem',
     lineHeight: 1.15,
     color: '#ffffff',
     whiteSpace: 'nowrap',
@@ -226,26 +274,28 @@ const useStyles = makeStyles()((theme) => ({
     textOverflow: 'ellipsis',
   },
   metricUnit: {
-    fontSize: '0.75rem',
+    fontSize: '0.8rem',
     fontWeight: 500,
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: '#9ca3af',
   },
   collapseButton: {
-    width: 28,
-    height: 28,
+    width: 30,
+    height: 30,
     borderRadius: '50%',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: '#1f2126',
     border: '1px solid rgba(255, 255, 255, 0.12)',
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: 'rgba(255, 255, 255, 0.85)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
     padding: 0,
     transition: 'all 0.15s ease',
+    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.3)',
     '&:hover': {
-      backgroundColor: 'rgba(255, 255, 255, 0.15)',
+      backgroundColor: '#282b32',
       color: '#ffffff',
+      borderColor: 'rgba(255, 255, 255, 0.25)',
     },
   },
   floatingUpButton: {
@@ -257,18 +307,20 @@ const useStyles = makeStyles()((theme) => ({
     width: 32,
     height: 32,
     borderRadius: '50%',
-    backgroundColor: 'rgba(20, 20, 20, 0.85)',
+    backgroundColor: '#1f2126',
     backdropFilter: 'blur(8px)',
-    border: '1px solid rgba(255, 255, 255, 0.25)',
+    border: '1px solid rgba(255, 255, 255, 0.2)',
     color: '#ffffff',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.45)',
     padding: 0,
+    transition: 'all 0.15s ease',
     '&:hover': {
-      backgroundColor: 'rgba(40, 40, 40, 0.95)',
+      backgroundColor: '#282b32',
+      borderColor: 'rgba(255, 255, 255, 0.35)',
     },
   },
 }));
@@ -356,13 +408,9 @@ const StreetViewDialog = ({ open, onClose, position, device, deviceName }) => {
       open={open}
       onClose={onClose}
       fullScreen={isMobile}
-      maxWidth="sm"
+      maxWidth="xs"
       fullWidth
-      slotProps={{
-        paper: {
-          className: isMobile ? classes.paperMobile : classes.paper,
-        },
-      }}
+      className={isMobile ? classes.dialogMobile : classes.dialog}
     >
       {/* Header Bar */}
       <DialogTitle className={classes.titleBar} component="div">
@@ -375,14 +423,14 @@ const StreetViewDialog = ({ open, onClose, position, device, deviceName }) => {
                 className={classes.carImage}
               />
             ) : (
-              <DirectionsCarIcon sx={{ fontSize: 24, color: '#29b6f6' }} />
+              <DirectionsCarIcon sx={{ fontSize: 22, color: '#ffffff' }} />
             )}
           </div>
           <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0.2 }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: '0.98rem', lineHeight: 1.2, color: '#ffffff' }} noWrap>
               {displayName}
             </Typography>
-            <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.75rem', lineHeight: 1 }} noWrap>
+            <Typography variant="caption" sx={{ color: '#9ca3af', fontSize: '0.75rem', lineHeight: 1 }} noWrap>
               {subtitleText}
             </Typography>
           </Box>
@@ -392,14 +440,14 @@ const StreetViewDialog = ({ open, onClose, position, device, deviceName }) => {
           <div
             className={classes.statusBadge}
             style={{
-              backgroundColor: isOnline ? 'rgba(76, 175, 80, 0.12)' : 'rgba(244, 67, 54, 0.12)',
-              color: isOnline ? '#4caf50' : '#f44336',
-              border: `1px solid ${isOnline ? 'rgba(76, 175, 80, 0.3)' : 'rgba(244, 67, 54, 0.3)'}`,
+              backgroundColor: isOnline ? 'rgba(34, 197, 94, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+              color: isOnline ? '#22c55e' : '#ef4444',
+              border: `1px solid ${isOnline ? 'rgba(34, 197, 94, 0.25)' : 'rgba(239, 68, 68, 0.25)'}`,
             }}
           >
             {isOnline ? 'Online' : 'Offline'}
           </div>
-          <IconButton onClick={onClose} size="small" sx={{ color: 'rgba(255, 255, 255, 0.7)', p: 0.5 }}>
+          <IconButton onClick={onClose} size="small" sx={{ color: '#9ca3af', p: 0.5, '&:hover': { color: '#ffffff' } }}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </Box>
@@ -434,7 +482,7 @@ const StreetViewDialog = ({ open, onClose, position, device, deviceName }) => {
                 href={directStreetViewUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                startIcon={<RoomIcon sx={{ fontSize: 16, color: '#fff' }} />}
+                startIcon={<RoomIcon sx={{ fontSize: 16, color: '#ffffff' }} />}
                 className={classes.viewOnMapButton}
               >
                 View on Google Maps
@@ -448,7 +496,7 @@ const StreetViewDialog = ({ open, onClose, position, device, deviceName }) => {
                   onClick={() => setShowDetails(true)}
                   title="Show Vehicle Details"
                 >
-                  <KeyboardArrowUpIcon sx={{ fontSize: 20 }} />
+                  <ArrowUpwardIcon sx={{ fontSize: 16 }} />
                 </button>
               )}
             </div>
@@ -460,7 +508,7 @@ const StreetViewDialog = ({ open, onClose, position, device, deviceName }) => {
                   {/* Speed */}
                   <div className={classes.metricCard}>
                     <div className={classes.metricHeader}>
-                      <SpeedIcon sx={{ fontSize: 15 }} />
+                      <SpeedIcon sx={{ fontSize: 15, color: '#9ca3af' }} />
                       <span>Speed</span>
                     </div>
                     <div className={classes.metricValueRow}>
@@ -472,11 +520,13 @@ const StreetViewDialog = ({ open, onClose, position, device, deviceName }) => {
                   {/* Odometer */}
                   <div className={classes.metricCard}>
                     <div className={classes.metricHeader}>
-                      <RouteIcon sx={{ fontSize: 15 }} />
+                      <RoadLaneIcon size={15} color="#9ca3af" />
                       <span>Odometer</span>
                     </div>
                     <div className={classes.metricValueRow}>
-                      <span className={classes.metricValue}>{distanceValue != null ? distanceValue : '--'}</span>
+                      <span className={classes.metricValue} style={{ fontSize: distanceValue && distanceValue.length > 7 ? '1.25rem' : '1.45rem' }}>
+                        {distanceValue != null ? distanceValue : '--'}
+                      </span>
                       <span className={classes.metricUnit}>{distanceUnitLabel}</span>
                     </div>
                   </div>
@@ -484,11 +534,11 @@ const StreetViewDialog = ({ open, onClose, position, device, deviceName }) => {
                   {/* Power */}
                   <div className={classes.metricCard}>
                     <div className={classes.metricHeader}>
-                      <BatteryFullIcon sx={{ fontSize: 15, color: isLowPower ? '#f44336' : 'inherit' }} />
+                      <HorizontalBatteryIcon size={16} color={isLowPower ? '#ef4444' : '#9ca3af'} />
                       <span>Power</span>
                     </div>
                     <div className={classes.metricValueRow}>
-                      <span className={classes.metricValue} style={{ color: isLowPower ? '#f44336' : '#ffffff' }}>
+                      <span className={classes.metricValue} style={{ color: isLowPower ? '#ef4444' : '#ffffff' }}>
                         {displayPowerNum}
                       </span>
                       {displayPowerUnit && <span className={classes.metricUnit}>{displayPowerUnit}</span>}
@@ -498,7 +548,7 @@ const StreetViewDialog = ({ open, onClose, position, device, deviceName }) => {
                   {/* Last report */}
                   <div className={classes.metricCard}>
                     <div className={classes.metricHeader}>
-                      <AccessTimeIcon sx={{ fontSize: 15 }} />
+                      <AccessTimeIcon sx={{ fontSize: 15, color: '#9ca3af' }} />
                       <span>Last report</span>
                     </div>
                     <div className={classes.metricValueRow}>
@@ -515,7 +565,7 @@ const StreetViewDialog = ({ open, onClose, position, device, deviceName }) => {
                   onClick={() => setShowDetails(false)}
                   title="Hide Vehicle Details"
                 >
-                  <KeyboardArrowDownIcon sx={{ fontSize: 18 }} />
+                  <ArrowDownwardIcon sx={{ fontSize: 16 }} />
                 </button>
               </div>
             )}
