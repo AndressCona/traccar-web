@@ -28,6 +28,7 @@ export default defineConfig(() => ({
       manifest: {
         short_name: 'Fleet GPS Tracker',
         name: 'Fleet GPS Tracker',
+        description: 'Fleet GPS Tracker',
         theme_color: '${colorPrimary}',
         icons: [
           {

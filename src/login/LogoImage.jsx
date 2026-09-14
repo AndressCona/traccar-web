@@ -23,7 +23,10 @@ const LogoImage = ({ color }) => {
   const logo = useSelector((state) => state.session.server.attributes?.logo);
   const logoInverted = useSelector((state) => state.session.server.attributes?.logoInverted);
 
-  if (logo) {
+  const isDefaultLogo =
+    !logo || logo === 'logo.svg' || logo === '/logo.svg' || logo.endsWith('/logo.svg');
+
+  if (!isDefaultLogo) {
     if (expanded && logoInverted) {
       return <img className={classes.image} src={logoInverted} alt="" />;
     }
