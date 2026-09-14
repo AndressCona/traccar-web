@@ -19,10 +19,11 @@ import {
   DialogActions,
   Button,
 } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
+import { useTheme, alpha } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { makeStyles } from 'tss-react/mui';
 import CloseIcon from '@mui/icons-material/Close';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import RouteIcon from '@mui/icons-material/Route';
 import SendIcon from '@mui/icons-material/Send';
 import EditIcon from '@mui/icons-material/Edit';
@@ -114,27 +115,61 @@ const useStyles = makeStyles()((theme, { statusColor }) => ({
     height: 52,
     opacity: theme.palette.mode === 'dark' ? 0.7 : 0.5,
   },
-  bannerHeader: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
+  topBar: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: theme.spacing(0.75),
-    padding: theme.spacing(1),
+    justifyContent: 'space-between',
+    padding: theme.spacing(0.75, 1.5),
+    backgroundColor: theme.palette.background.paper,
+    borderBottom: `1px solid ${theme.palette.divider}`,
+    minHeight: 44,
+    gap: theme.spacing(1),
+    cursor: 'move',
+    userSelect: 'none',
   },
-  close: {
-    color: theme.palette.common.white,
-    backgroundColor: 'rgba(0,0,0,.35)',
+  topBarLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(1),
+    minWidth: 0,
+    flex: 1,
+  },
+  topBarTitle: {
+    fontWeight: 700,
+    fontSize: '0.95rem',
+    lineHeight: 1.2,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    color: theme.palette.text.primary,
+  },
+  topBarRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(0.5),
+    flexShrink: 0,
+  },
+  topBarStatus: {
+    fontSize: '0.8rem',
+    fontWeight: 700,
+    color:
+      theme.palette.mode === 'light'
+        ? theme.palette[statusColor]?.main || (statusColor === 'success' ? '#2e7d32' : statusColor === 'error' ? '#d32f2f' : theme.palette.text.secondary)
+        : theme.palette[statusColor]?.light || theme.palette[statusColor]?.main || (statusColor === 'success' ? '#4caf50' : statusColor === 'error' ? '#f44336' : theme.palette.text.secondary),
+    marginRight: theme.spacing(0.25),
+  },
+  topBarButton: {
+    padding: 4,
+    color: theme.palette.text.secondary,
     '&:hover': {
-      backgroundColor: 'rgba(0,0,0,.55)',
+      color: theme.palette.text.primary,
+      backgroundColor: theme.palette.action.hover,
     },
   },
   alarmBadge: {
     color: theme.palette.common.white,
     backgroundColor: theme.palette.error.main,
+    padding: 3,
     '&:hover': {
       backgroundColor: theme.palette.error.dark,
     },
@@ -144,7 +179,7 @@ const useStyles = makeStyles()((theme, { statusColor }) => ({
     height: 60,
     borderRadius: '50%',
     overflow: 'hidden',
-    boxShadow: theme.shadows[8],
+    boxShadow: `0 4px 18px 2px ${alpha(theme.palette.primary.main, 0.55)}, 0 2px 8px ${alpha(theme.palette.primary.main, 0.35)}, 0 2px 4px rgba(0, 0, 0, 0.2)`,
     pointerEvents: 'auto',
     cursor: 'pointer',
     border: `3px solid ${theme.palette.background.paper}`,
@@ -154,51 +189,8 @@ const useStyles = makeStyles()((theme, { statusColor }) => ({
     height: '100%',
     objectFit: 'cover',
   },
-  dropZone: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: 120,
-    background: `linear-gradient(to bottom, ${theme.palette.error.main}cc, transparent)`,
-    display: 'flex',
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-    paddingTop: theme.spacing(3),
-    zIndex: 10,
-    pointerEvents: 'none',
-    opacity: 0,
-    transition: 'opacity 0.2s',
-  },
-  dropZoneActive: {
-    opacity: 1,
-  },
-  dropZoneIcon: {
-    color: theme.palette.common.white,
-    fontSize: 48,
-    filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,0.5))',
-  },
-  pill: {
-    position: 'absolute',
-    left: theme.spacing(1),
-    top: theme.spacing(1),
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 5,
-    fontSize: 11,
-    fontWeight: 700,
-    padding: '4px 10px',
-    borderRadius: 20,
-    color: theme.palette.common.white,
-    backgroundColor: 'rgba(0,0,0,.55)',
-  },
-  pillDot: {
-    fontSize: '8px !important',
-    color:
-      theme.palette.mode === 'light'
-        ? theme.palette[statusColor]?.light || theme.palette.neutral.light
-        : theme.palette[statusColor]?.main || theme.palette.neutral.main,
-  },
+
+
   head: {
     padding: theme.spacing(1, 2),
   },
@@ -374,8 +366,20 @@ const useStyles = makeStyles()((theme, { statusColor }) => ({
     },
     [theme.breakpoints.down('md')]: {
       left: '50%',
-      bottom: `calc(${theme.dimensions.bottomBarHeight}px - 30px)`,
+      bottom: `calc(${theme.dimensions.bottomBarHeight}px + 12px)`,
       transform: 'translateX(-50%)',
+    },
+  },
+  rootMinimized: {
+    [theme.breakpoints.up('md')]: {
+      right: 16,
+      bottom: theme.spacing(5),
+    },
+    [theme.breakpoints.down('md')]: {
+      left: 'auto !important',
+      right: `${theme.spacing(2)} !important`,
+      bottom: `calc(${theme.dimensions.bottomBarHeight}px + 40px) !important`,
+      transform: 'none !important',
     },
   },
 
@@ -388,70 +392,37 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
 
   const deviceReadonly = useDeviceReadonly();
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const [minimized, setMinimized] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const autoMinimizedByListRef = useRef(false);
 
-  const [isNearTop, setIsNearTop] = useState(false);
+  useEffect(() => {
+    autoMinimizedByListRef.current = false;
+    setMinimized(false);
+  }, [deviceId]);
 
-  const handleDrag = (e) => {
-    if (minimized && isMobile) {
-      if (!isDragging) setIsDragging(true);
-      
-      let clientY;
-      if (e.changedTouches && e.changedTouches.length > 0) {
-         clientY = e.changedTouches[0].clientY;
-      } else if (e.touches && e.touches.length > 0) {
-         clientY = e.touches[0].clientY;
-      } else {
-         clientY = e.clientY;
-      }
-      
-      if (clientY < 180) {
-        setIsNearTop(true);
-      } else {
-        setIsNearTop(false);
-      }
-    }
-  };
-
-  const handleDragStop = (e) => {
-    if (minimized && isMobile) {
-      setIsDragging(false);
-      setIsNearTop(false);
-      
-      let clientY, clientX;
-      if (e.changedTouches && e.changedTouches.length > 0) {
-         clientY = e.changedTouches[0].clientY;
-         clientX = e.changedTouches[0].clientX;
-      } else {
-         clientY = e.clientY;
-         clientX = e.clientX;
-      }
-      
-      const dropZoneHeight = 120;
-      const dropZoneWidth = 200;
-      const windowHeight = window.innerHeight;
-      const windowWidth = window.innerWidth;
-
-      if (clientY < dropZoneHeight && 
-          clientX > windowWidth / 2 - dropZoneWidth / 2 &&
-          clientX < windowWidth / 2 + dropZoneWidth / 2) {
-         onClose();
-      }
-    }
-  };
-
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-
-  const handleMinimize = (e) => {
-    e.stopPropagation();
-    e.preventDefault();
+  useEffect(() => {
     if (isMobile) {
-      setMinimized(true);
-    } else {
-      onClose();
+      if (devicesOpen) {
+        if (!minimized) {
+          autoMinimizedByListRef.current = true;
+          setMinimized(true);
+        }
+      } else if (autoMinimizedByListRef.current) {
+        autoMinimizedByListRef.current = false;
+        setMinimized(false);
+      }
     }
+  }, [devicesOpen, isMobile]);
+
+  const handleDrag = () => {
+    if (!isDragging) setIsDragging(true);
+  };
+
+  const handleDragStop = () => {
+    setIsDragging(false);
   };
 
   const shareDisabled = useSelector((state) => state.session.server.attributes.disableShare);
@@ -768,10 +739,10 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
 
   return (
     <>
-      <div className={classes.root}>
+      <div className={`${classes.root} ${minimized ? classes.rootMinimized : ''}`}>
         {device && (
           <Rnd
-            key={minimized && isMobile ? 'rnd-min' : 'rnd-full'}
+            key={minimized ? 'rnd-min' : 'rnd-full'}
             default={{ x: 0, y: 0, width: 'auto', height: 'auto' }}
             enableResizing={false}
             dragHandleClassName="draggable-header"
@@ -779,16 +750,18 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
             onDrag={handleDrag}
             onDragStop={handleDragStop}
           >
-            {minimized && isMobile ? (
+            {minimized ? (
               <div 
                 className={`draggable-header ${classes.minimizedButton}`}
                 onClick={(e) => {
                   e.stopPropagation();
+                  autoMinimizedByListRef.current = false;
                   setMinimized(false);
                 }}
                 onTouchEnd={(e) => {
                   if (!isDragging) {
                     e.stopPropagation();
+                    autoMinimizedByListRef.current = false;
                     setMinimized(false);
                   }
                 }}
@@ -803,6 +776,92 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
               </div>
             ) : (
             <Card elevation={8} className={classes.card}>
+              <div className={`draggable-header ${classes.topBar}`}>
+                <div className={classes.topBarLeft}>
+                  <CircleIcon
+                    sx={{
+                      fontSize: 10,
+                      flexShrink: 0,
+                      color:
+                        theme.palette.mode === 'light'
+                          ? theme.palette[statusColor]?.main || (statusColor === 'success' ? '#2e7d32' : statusColor === 'error' ? '#d32f2f' : '#4caf50')
+                          : theme.palette[statusColor]?.light || theme.palette[statusColor]?.main || (statusColor === 'success' ? '#4caf50' : statusColor === 'error' ? '#f44336' : '#4caf50'),
+                    }}
+                  />
+                  <Typography className={classes.topBarTitle}>
+                    {displayName}
+                  </Typography>
+                  {hasEvents && (
+                    <Tooltip
+                      title={`${deviceEvents.length} Pending Notification${deviceEvents.length > 1 ? 's' : ''}`}
+                    >
+                      <IconButton
+                        size="small"
+                        sx={{ padding: 0.25 }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          if (onEventsClick) onEventsClick();
+                        }}
+                      >
+                        <NotificationsActiveIcon sx={{ fontSize: '1.05rem', color: theme.palette.error.main }} />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                  {noCutoff && (
+                    <Tooltip title="No cutoff available">
+                      <PowerOffIcon sx={{ fontSize: '1.05rem', color: theme.palette.warning.main }} />
+                    </Tooltip>
+                  )}
+                </div>
+                <div className={classes.topBarRight}>
+                  <Typography className={classes.topBarStatus}>
+                    {formatStatus(device.status, t)}
+                  </Typography>
+                  {hasAlarm && (
+                    <Tooltip
+                      title={`${t('eventAlarm')}: ${formatAlarm(position.attributes.alarm, t)}`}
+                    >
+                      <IconButton size="small" className={classes.alarmBadge}>
+                        <ErrorIcon sx={{ fontSize: '1rem' }} />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                  <Tooltip title={t('sharedMinimize') || 'Minimize'}>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMinimized(true);
+                      }}
+                      onTouchEnd={(e) => {
+                        e.stopPropagation();
+                        setMinimized(true);
+                      }}
+                      className={classes.topBarButton}
+                    >
+                      <KeyboardArrowDownIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title={t('sharedClose') || 'Close'}>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onClose();
+                      }}
+                      onTouchEnd={(e) => {
+                        e.stopPropagation();
+                        onClose();
+                      }}
+                      className={classes.topBarButton}
+                    >
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </div>
+              </div>
+
               <CardMedia
                 className={`draggable-header ${classes.banner}`}
                 image={deviceImage && `/api/media/${device.uniqueId}/${deviceImage}`}
@@ -814,73 +873,13 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
                     alt=""
                   />
                 )}
-                <span className={classes.pill}>
-                  <CircleIcon className={classes.pillDot} />
-                  {formatStatus(device.status, t)}
-                </span>
-                <div className={classes.bannerHeader}>
-                  {hasAlarm && (
-                    <Tooltip
-                      title={`${t('eventAlarm')}: ${formatAlarm(position.attributes.alarm, t)}`}
-                    >
-                      <IconButton size="small" className={classes.alarmBadge}>
-                        <ErrorIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                  <IconButton
-                    size="small"
-                    onClick={(e) => {
-                      if (isMobile) {
-                        e.stopPropagation();
-                        setMinimized(true);
-                      } else {
-                        onClose();
-                      }
-                    }}
-                    onTouchEnd={(e) => {
-                      e.stopPropagation();
-                      if (isMobile) {
-                        setMinimized(true);
-                      } else {
-                        onClose();
-                      }
-                    }}
-                    className={classes.close}
-                  >
-                    <CloseIcon fontSize="small" />
-                  </IconButton>
-                </div>
               </CardMedia>
 
               <div className={classes.head}>
                 <div className={classes.nameRow}>
                   <Typography variant="subtitle1" className={classes.name}>
-                    {displayName}
-                    {device.model && <span className={classes.modelSuffix}> · {device.model}</span>}
+                    {device.model ? device.model : displayName}
                   </Typography>
-                  {hasEvents && (
-                    <Tooltip
-                      title={`${deviceEvents.length} Pending Notification${deviceEvents.length > 1 ? 's' : ''}`}
-                    >
-                      <IconButton
-                        size="small"
-                        sx={{ padding: 0.5, marginLeft: 0.5 }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          e.preventDefault();
-                          if (onEventsClick) onEventsClick();
-                        }}
-                      >
-                        <NotificationsActiveIcon className={classes.hasEventsIcon} />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                  {noCutoff && (
-                    <Tooltip title="No cutoff available">
-                      <PowerOffIcon className={classes.noCutoffIcon} />
-                    </Tooltip>
-                  )}
                 </div>
                 {position && position.attributes && (
                   <div
@@ -1134,9 +1133,6 @@ const StatusCard = ({ deviceId, position, onClose, disableActions, onEventsClick
             )}
           </Rnd>
         )}
-      </div>
-      <div className={`${classes.dropZone} ${isNearTop ? classes.dropZoneActive : ''}`}>
-        <CloseIcon className={classes.dropZoneIcon} />
       </div>
       {position && (
         <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>

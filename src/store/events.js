@@ -10,7 +10,7 @@ const { reducer, actions } = createSlice({
       const newItems = action.payload.filter((newItem) => !state.items.some((item) => item.id === newItem.id));
       if (newItems.length > 0) {
         state.items.unshift(...newItems);
-        state.items.splice(50);
+        state.items.splice(150);
       }
     },
     delete(state, action) {
@@ -28,8 +28,27 @@ const { reducer, actions } = createSlice({
         // ignore
       }
     },
+    deleteMultiple(state, action) {
+      const idsToDelete = new Set(action.payload);
+      state.items = state.items.filter((item) => !idsToDelete.has(item.id));
+      try {
+        const dismissed = JSON.parse(localStorage.getItem('dismissedEvents') || '[]');
+        idsToDelete.forEach((id) => {
+          if (!dismissed.includes(id)) {
+            dismissed.push(id);
+          }
+        });
+        if (dismissed.length > 500) {
+          dismissed.splice(0, dismissed.length - 500);
+        }
+        localStorage.setItem('dismissedEvents', JSON.stringify(dismissed));
+      } catch (e) {
+        // ignore
+      }
+    },
     deleteAll(state) {
       try {
+        localStorage.setItem('lastDismissedAllTime', new Date().toISOString());
         const dismissed = JSON.parse(localStorage.getItem('dismissedEvents') || '[]');
         state.items.forEach((item) => {
           if (!dismissed.includes(item.id)) {

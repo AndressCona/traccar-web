@@ -188,8 +188,34 @@ const SocketController = () => {
           if (eventsResponse.ok) {
             const events = await eventsResponse.json();
             const dismissed = JSON.parse(localStorage.getItem('dismissedEvents') || '[]');
+            const lastDismissedAll = localStorage.getItem('lastDismissedAllTime');
+            const lastDismissedAllTime = lastDismissedAll ? new Date(lastDismissedAll).getTime() : 0;
+            const lastDismissedCategories = JSON.parse(localStorage.getItem('lastDismissedCategories') || '{}');
+
+            const getEventCategory = (event) => {
+              if (event.type === 'geofenceEnter' || event.type === 'geofenceExit' || event.geofenceId) return 'geofences';
+              if (event.type === 'deviceOverspeed') return 'speed';
+              if (event.type === 'alarm' || event.attributes?.alarm) return 'alarms';
+              if (event.type === 'commandResult' || event.type === 'queuedCommand' || (event.type && event.type.toLowerCase().includes('command'))) return 'commands';
+              return 'other';
+            };
+
             const importantTypes = ['commandResult', 'alarm', 'deviceOverspeed', 'geofenceEnter', 'geofenceExit', 'maintenance'];
-            const filteredEvents = events.filter((e) => !dismissed.includes(e.id) && importantTypes.includes(e.type));
+            const filteredEvents = events.filter((e) => {
+              if (dismissed.includes(e.id)) return false;
+              if (!importantTypes.includes(e.type)) return false;
+
+              const eventTime = e.eventTime ? new Date(e.eventTime).getTime() : 0;
+              if (lastDismissedAllTime && eventTime <= lastDismissedAllTime) return false;
+
+              const cat = getEventCategory(e);
+              if (lastDismissedCategories[cat]) {
+                const catTime = new Date(lastDismissedCategories[cat]).getTime();
+                if (catTime && eventTime <= catTime) return false;
+              }
+
+              return true;
+            });
             dispatch(eventsActions.add(filteredEvents));
           }
         } catch (e) {
